@@ -128,11 +128,27 @@ export default function AppSidebar() {
           })}
         </nav>
 
+        <div className={cn(
+          "flex items-center gap-3 mb-2", 
+          isCollapsed ? "justify-center" : "px-2"
+        )}>
+          <Switch 
+            checked={theme === "dark"} 
+            onCheckedChange={toggleTheme} 
+          />
+          {!isCollapsed && (
+            <span className="text-[10px] font-bold text-sidebar-foreground/40 uppercase tracking-widest leading-none">
+              Тема
+            </span>
+          )}
+        </div>
+
         {/* Bottom Section (User & Theme) */}
         <div className={cn(
-          "flex items-center gap-2.5 py-2 rounded-xl bg-sidebar-accent/40 border border-sidebar-border/50 transition-all",
+          "flex items-center gap-2.5 py-2 m-2 rounded-xl bg-sidebar-accent/40 border border-sidebar-border/50 transition-all",
           isCollapsed ? "justify-center px-1" : "px-3"
         )}>
+          
           <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0 border border-primary/10">
             <User className="w-4.5 h-4.5 text-primary" />
           </div>
