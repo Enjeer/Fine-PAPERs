@@ -69,9 +69,9 @@ export default function AppSidebar() {
             className="bg-sidebar-accent"
             role="themeSwitch"
           />
-          <span className="text-sm text-sidebar-foreground">
+          {/* <span className="text-sm text-sidebar-foreground">
             {theme === "dark" ? "Темная тема" : "Светлая тема"}
-          </span>
+          </span> */}
         </div>
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
