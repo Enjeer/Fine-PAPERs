@@ -67,6 +67,7 @@ export default function AppSidebar() {
             checked={theme === "dark"} 
             onCheckedChange={toggleTheme} 
             className="bg-sidebar-accent"
+            role="themeSwitch"
           />
           <span className="text-sm text-sidebar-foreground">
             {theme === "dark" ? "Темная тема" : "Светлая тема"}
