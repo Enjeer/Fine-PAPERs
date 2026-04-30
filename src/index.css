@@ -11,41 +11,31 @@
 
 @layer base {
   :root {
+    /* Цветовые переменные оставляем без изменений */
     --background: 220 16% 96%;
     --foreground: 220 25% 10%;
-
     --card: 0 0% 100%;
     --card-foreground: 220 25% 10%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 10%;
-
     --primary: 230 70% 55%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 220 14% 90%;
     --secondary-foreground: 220 25% 10%;
-
     --muted: 220 14% 92%;
     --muted-foreground: 220 10% 46%;
-
     --accent: 250 60% 60%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
     --chapter-blue: 215 63% 92%;
     --chapter-purple: 250 62% 93%;
     --chapter-green: 152 48% 91%;
     --chapter-amber: 38 73% 90%;
-
     --border: 220 13% 87%;
     --input: 220 13% 87%;
     --ring: 230 70% 55%;
-
     --radius: 0.75rem;
-
     --sidebar-background: 220 20% 14%;
     --sidebar-foreground: 220 10% 80%;
     --sidebar-primary: 230 70% 55%;
@@ -54,15 +44,12 @@
     --sidebar-accent-foreground: 220 10% 90%;
     --sidebar-border: 220 15% 22%;
     --sidebar-ring: 230 70% 55%;
-
     --success: 152 60% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-
     --font-display: 'JetBrains Mono', monospace;
     --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-
     --shadow-sm: 0 1px 2px 0 hsl(220 25% 10% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(220 25% 10% / 0.07), 0 2px 4px -2px hsl(220 25% 10% / 0.05);
     --shadow-lg: 0 10px 15px -3px hsl(220 25% 10% / 0.08), 0 4px 6px -4px hsl(220 25% 10% / 0.04);
@@ -72,32 +59,23 @@
   .dark {
     --background: 220 20% 8%;
     --foreground: 220 10% 90%;
-
     --card: 220 20% 12%;
     --card-foreground: 220 10% 90%;
-
     --popover: 220 20% 12%;
     --popover-foreground: 220 10% 90%;
-
     --primary: 230 70% 60%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 220 15% 18%;
     --secondary-foreground: 220 10% 90%;
-
     --muted: 220 15% 16%;
     --muted-foreground: 220 9% 73%;
-
     --accent: 250 60% 65%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 220 15% 20%;
     --input: 220 15% 20%;
     --ring: 230 70% 60%;
-
     --sidebar-background: 220 22% 6%;
     --sidebar-foreground: 220 10% 75%;
     --sidebar-primary: 230 70% 60%;
@@ -106,7 +84,6 @@
     --sidebar-accent-foreground: 220 10% 85%;
     --sidebar-border: 220 15% 14%;
     --sidebar-ring: 230 70% 60%;
-
     --success: 152 55% 45%;
     --warning: 38 90% 55%;
   }
@@ -120,10 +97,36 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
+    -webkit-tap-highlight-color: transparent;
+    font-size: 14px;
+    @screen sm {
+      font-size: 16px;
+    }
   }
 
-  h1:not(.preview), h2:not(.preview), h3:not(.preview), h4:not(.preview), h5:not(.preview), h6:not(.preview) {
+  h1:not(.preview) {
+    @apply text-xl sm:text-3xl md:text-4xl font-bold tracking-tight;
     font-family: var(--font-display);
+    line-height: 1.2;
+  }
+
+  h2:not(.preview) {
+    @apply text-lg sm:text-2xl font-semibold;
+    font-family: var(--font-display);
+    line-height: 1.25;
+  }
+
+  h3:not(.preview) {
+    @apply text-base sm:text-xl font-medium;
+    font-family: var(--font-display);
+  }
+
+  p {
+    @apply leading-relaxed mb-4;
+  }
+
+  input, button, select, textarea {
+    @apply text-base md:text-sm transition-colors;
   }
 }
 
@@ -136,8 +139,21 @@
   .editor-shadow {
     box-shadow: var(--shadow-lg);
   }
+
+  .responsive-container {
+    /* Уменьшаем отступы на мобильных (px-4) */
+    @apply w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-  .cky-btn-revisit-wrapper{
-    display: none !important;
-  }
+.cky-btn-revisit-wrapper {
+  display: none !important;
+}
