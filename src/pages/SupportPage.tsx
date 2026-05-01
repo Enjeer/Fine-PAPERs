@@ -104,16 +104,17 @@ export default function SupportPage() {
         <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Найти заявку..." value={search} onChange={e => setSearch(e.target.value)} />
+            <Input className="pl-9 h-10" placeholder="Поиск проектов..." value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-1 px-1 touch-pan-x">
             {FILTERS.map(f => (
                 <Button
                 key={f}
                 variant={filter === f ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilter(f)}
-                className="text-xs"
+                className="text-xs whitespace-nowrap px-4 h-9 shadow-sm"
                 >
                 {f}
                 </Button>
@@ -128,8 +129,8 @@ export default function SupportPage() {
             {/* <p className="text-lg font-medium">Заяки не найдены</p>
             <p className="text-sm">Отсавьте заяку или измените фильтры</p> */}
             <p className="text-lg font-medium">Раздел в разработке</p>
-            <p className="text-sm">Но вы можете <a className="hover:text-primary" target="_blank" href="https://forms.clickup.com/90121612778/f/2kxunbfa-612/MB7T1KYME3OPWKZ9IW">оставить заявку</a></p>
-            <p className="text-sm">Почта для контакта: <a className="hover:text-primary" href="mailto:aor.tech.2026@gmail.com">aor.tech.2026@gmail.com</a></p>
+            <p className="text-sm text-center">Но вы можете <a className="hover:text-primary" target="_blank" href="https://forms.clickup.com/90121612778/f/2kxunbfa-612/MB7T1KYME3OPWKZ9IW">оставить заявку</a></p>
+            <p className="text-sm text-center">Почта для контакта: <a className="hover:text-primary" href="mailto:aor.tech.2026@gmail.com">aor.tech.2026@gmail.com</a></p>
             </div>
         ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

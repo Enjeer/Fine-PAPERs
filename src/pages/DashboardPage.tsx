@@ -86,7 +86,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex md:flex-row flex-col md:items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-foreground">
             Привет, {user?.user_name}
@@ -140,12 +140,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map(s => (
           <Card key={s.label} className="border-border">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <s.icon className={`w-5 h-5 ${s.color}`} />
+            <CardContent className="p-5 h-full flex flex-col justify-between gap-3">
+              <div className="flex md:flex-col flex-row justify-between">
+                <div className="flex items-center justify-between mb-3">
+                  <s.icon className={`w-6 h-6 ${s.color}`} />
+                </div>
+                <p className="text-2xl font-display font-bold text-foreground">{s.value}</p>
               </div>
-              <p className="text-2xl font-display font-bold text-foreground">{s.value}</p>
-              <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
+              <p className="text-sm text-muted-foreground mt-0 mb-0">{s.label}</p>
             </CardContent>
           </Card>
         ))}

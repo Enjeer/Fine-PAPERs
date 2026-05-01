@@ -122,16 +122,17 @@ export default function ProjectsPage() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Поиск проектов..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9 h-10" placeholder="Поиск проектов..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <div className="flex gap-2">
+
+        <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-1 px-1 touch-pan-x">
           {FILTERS.map(f => (
             <Button
               key={f}
               variant={filter === f ? "default" : "outline"}
               size="sm"
               onClick={() => setFilter(f)}
-              className="text-xs"
+              className="text-xs whitespace-nowrap px-4 h-9 shadow-sm"
             >
               {f}
             </Button>
