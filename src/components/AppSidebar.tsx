@@ -9,7 +9,8 @@ import {
   Menu, 
   X, 
   PanelLeftClose, 
-  PanelLeftOpen 
+  PanelLeftOpen,
+  ChevronRight
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "./ui/button";
@@ -25,10 +26,14 @@ const navItems = [
   { label: "Поддержка", icon: Headset, path: "/support" },
 ];
 
-export default function AppSidebar() {
+interface AppSidebarProps {
+  isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
+}
+
+export default function AppSidebar({ isCollapsed, setIsCollapsed }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,7 +58,7 @@ export default function AppSidebar() {
       </div>
 
       {isMobileOpen && (
-        <div 
+        <div  
           className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm" 
           onClick={() => setIsMobileOpen(false)}
         />
@@ -63,7 +68,7 @@ export default function AppSidebar() {
         className={cn(
           "h-screen flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out shrink-0 z-40",
           isCollapsed ? "w-20" : "w-64 md:w-80",
-          "fixed md:sticky top-0",
+          "fixed top-0",
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
@@ -97,7 +102,7 @@ export default function AppSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto hide-scrollbar">
+        <nav className="flex-1 align-left py-4 px-3 space-y-1 hide-scrollbar">
           {navItems.map(item => {
             const active = location.pathname === item.path;
             return (
@@ -108,18 +113,18 @@ export default function AppSidebar() {
                   if (isMobileOpen) setIsMobileOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 p-2.5 rounded-lg text-sm font-medium transition-all group relative",
-                  isCollapsed ? "justify-center" : "justify-start px-3",
+                  "w-full flex items-center p-2.5 rounded-lg text-sm font-medium transition-all group relative",
+                  isCollapsed ? "pl-[18px] justify-start gap-0" : "justify-start px-3 gap-3",
                   active
                     ? "bg-primary/10 text-primary"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 )}
               >
-                <item.icon className={cn("shrink-0", isCollapsed ? "h-6 w-6" : "h-5 w-5")} />
+                <item.icon className={cn("shrink-0", "h-5 w-5")} />
                 {!isCollapsed && <span className="truncate">{item.label}</span>}
-                
+                {/* {isCollapsed && (<ChevronRight className="w-5 h-5 hidden group-hover:flex"/>)} */}
                 {isCollapsed && (
-                  <div className="absolute left-full ml-4 px-2 py-1 bg-popover text-popover-foreground text-xs rounded border shadow-md whitespace-nowrap z-50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                  <div className="absolute left-full ml-50 px-2 py-1 bg-popover opacity-0 text-sidebar-foreground text-xs rounded border shadow-md whitespace-nowrap z-100 group-hover:opacity-100 pointer-events-none transition-opacity">
                     {item.label}
                   </div>
                 )}
