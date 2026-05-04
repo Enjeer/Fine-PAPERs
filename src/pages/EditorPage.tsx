@@ -343,8 +343,8 @@ const handleDownload = async () => {
           className="h-full"
         >
           <ResizablePanel 
-            order={isMobile ? 2 : 1}
-            defaultSize={50} 
+            order={isMobile ? 1 : 2} 
+            defaultSize={isMobile ? 60 : 50}
             minSize={30} 
             className="flex flex-col min-h-0 min-w-0"
           >
@@ -416,9 +416,9 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <ScrollArea className="flex-1 w-full h-full">
-              <div className="min-h-full w-full flex justify-center overflow-x-auto">
-                <div className="shrink-0 shadow-2xl h-fit">
+          <ScrollArea className="flex-1 w-full h-full [&_.scroll-area-viewport]:w-[21cm]">
+            <div className="flex justify-center items-start pt-8 h-[29.7cm]">
+              <div className="w-[21cm] max-w-full shadow-2xl mx-auto">
                     <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
                 </div>
               </div>
