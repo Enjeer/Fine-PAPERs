@@ -416,26 +416,37 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <div className="flex-1 w-full h-full relative overflow-hidden @container">
+            <div className="flex-1 w-full h-full relative overflow-hidden @container/preview">
               <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex flex-col items-center">
+                <div className="min-h-full w-full flex flex-col items-center px-4">
                   <div 
-                    className="shadow-2xl bg-white"
+                    className="relative flex justify-center"
                     style={{
-                      width: '210mm',
-                      minHeight: '297mm',
-                      transform: isMobile 
-                        ? 'scale(0.4)' 
-                        : 'scale(min(calc(90cqw / 794), 1))',
-                      transformOrigin: 'top center',
+                      width: 'min(100%, 210mm)', 
+                      height: 'calc(min(100cqw - 32px, 210mm) * 1.414)', 
                     }}
                   >
-                    <DocumentPreview 
-                      blocks={blocks} 
-                      projectName={projectName} 
-                      projectType={project.type}
-                    />
+                    <div 
+                      className="shadow-2xl bg-white origin-top"
+                      style={{
+                        position: 'absolute',
+                        width: '210mm',
+                        minHeight: '297mm',
+                        transform: isMobile 
+                          ? 'scale(0.4)' 
+                          : 'scale(calc(min(100cqw - 32px, 794px) / 794))', 
+                      }}
+                    >
+                      <div className="w-full h-full">
+                        <DocumentPreview 
+                          blocks={blocks} 
+                          projectName={projectName} 
+                          projectType={project.type}
+                        />
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               </ScrollArea>
             </div>
