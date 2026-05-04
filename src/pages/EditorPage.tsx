@@ -305,49 +305,7 @@ const handleDownload = async () => {
   const enrichedBlocks = getBlocksWithMetadata(sortableBlocks);
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Toolbar */}
-      <header className="border-b border-border bg-card px-4 py-3 flex items-center gap-3 shrink-0">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/projects")}>
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <Input
-          value={projectName}
-          onChange={e => setProjectName(e.target.value)}
-          className="max-w-md font-display font-semibold border-none bg-transparent text-foreground focus-visible:ring-0 px-2"
-        />
-        <div className="flex-1" />
-        <Select
-          value={project.status}
-          onValueChange={v => updateProject(projectId!, { status: v as any })}
-        >
-          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Активный</SelectItem>
-            <SelectItem value="inProgress">В работе</SelectItem>
-            <SelectItem value="done">Завершён</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button onClick={handleSave} size="sm" className="gap-2">
-          {!isSaving ? (
-            <Save className="w-3.5 h-3.5" />
-          ) : (
-            <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
-          )}
-          Сохранить
-        </Button>
-        <Button variant="outline" disabled={isDownloading? true : false} onClick={handleDownload} size="sm" className="gap-2">
-          {!isDownloading ? (
-            <Download className="w-3.5 h-3.5" />
-          ) : (
-            <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
-          )}Скачать
-        </Button>
-      </header>
-
-      {/* Editor + Preview */}
-        <div className="h-full flex flex-col overflow-hidden">
-      {/* Toolbar */}
+    <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground">
       <header className="border-b border-border bg-card px-4 py-3 flex items-center gap-3 shrink-0 z-20">
         <Button variant="ghost" size="icon" onClick={() => navigate("/projects")}>
           <ArrowLeft className="w-4 h-4" />
@@ -370,124 +328,104 @@ const handleDownload = async () => {
           </SelectContent>
         </Select>
         <Button onClick={handleSave} size="sm" className="gap-2">
-          {!isSaving ? (
-            <Save className="w-3.5 h-3.5" />
-          ) : (
-            <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
-          )}
+          {!isSaving ? <Save className="w-3.5 h-3.5" /> : <LoaderCircle className="w-3.5 h-3.5 animate-spin" />}
           Сохранить
         </Button>
         <Button variant="outline" disabled={isDownloading} onClick={handleDownload} size="sm" className="gap-2">
-          {!isDownloading ? (
-            <Download className="w-3.5 h-3.5" />
-          ) : (
-            <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
-          )}Скачать
+          {!isDownloading ? <Download className="w-3.5 h-3.5" /> : <LoaderCircle className="w-3.5 h-3.5 animate-spin" />}
+          Скачать
         </Button>
       </header>
 
-      {/* Editor + Preview Wrapper */}
-        <main className="flex-1 min-h-0 relative bg-muted/20">
-          <ResizablePanelGroup 
-            direction={isMobile ? "vertical" : "horizontal"} 
-            className="h-full"
+      <main className="flex-1 min-h-0 min-w-0 overflow-hidden relative">
+        <ResizablePanelGroup 
+          direction={isMobile ? "vertical" : "horizontal"} 
+          className="h-full"
+        >
+          <ResizablePanel 
+            order={isMobile ? 2 : 1}
+            defaultSize={50} 
+            minSize={30} 
+            className="flex flex-col min-h-0 min-w-0"
           >
-            {/* EDITOR PANEL */}
-            <ResizablePanel 
-              defaultSize={50} 
-              minSize={30} 
-              className="flex flex-col bg-background"
-            >
-              <ScrollArea className="flex-1">
-                <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
-                  {/* Title page block */}
-                  {titleBlock && (
-                    <Card className="border-border border-primary/20 overflow-hidden shadow-sm">
-                      <CardContent className="p-0">
-                        <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-primary/5">
-                          <Lock className="w-3.5 h-3.5 text-primary/50" />
-                          <span className="text-xs text-primary font-medium uppercase tracking-wider flex-1">
-                            Титульный лист
-                          </span>
-                        </div>
-                        <div className="p-4">
-                          <BlockEditor block={titleBlock} onChange={content => updateBlock(titleBlock.id, content)} isSaved={isSaved} />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+            <ScrollArea className="flex-1 w-full h-full bg-background">
+              <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
+                {titleBlock && (
+                  <Card className="border-border border-primary/20 overflow-hidden shadow-sm">
+                    <CardContent className="p-0">
+                      <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-primary/5">
+                        <Lock className="w-3.5 h-3.5 text-primary/50" />
+                        <span className="text-xs text-primary font-medium uppercase tracking-wider flex-1">Титульный лист</span>
+                      </div>
+                      <div className="p-4">
+                        <BlockEditor block={titleBlock} onChange={content => updateBlock(titleBlock.id, content)} isSaved={isSaved} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                  {/* Auto-generated TOC indicator */}
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-dashed border-border">
-                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Содержание — генерируется автоматически</span>
-                  </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-dashed border-border">
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Содержание — генерируется автоматически</span>
+                </div>
 
-                  {/* Sortable content blocks */}
-                  <div className="space-y-3">
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                      <SortableContext items={enrichedBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                        {enrichedBlocks.map((block, idx) => (
-                          <SortableBlockCard
-                            key={block.id}
-                            block={block}
-                            index={idx}
-                            totalCount={enrichedBlocks.length}
-                            onMove={(dir) => moveBlock(block.id, dir)} 
-                            onRemove={() => removeBlock(block.id)}
-                            onUpdate={(content) => updateBlock(block.id, content)}
-                            isSaved={isSaved}
-                          />
-                        ))}
-                      </SortableContext>
-                    </DndContext>
-                  </div>
+                <div className="space-y-3">
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={enrichedBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                      {enrichedBlocks.map((block, idx) => (
+                        <SortableBlockCard
+                          key={block.id}
+                          block={block}
+                          index={idx}
+                          totalCount={enrichedBlocks.length}
+                          onMove={(dir) => moveBlock(block.id, dir)} 
+                          onRemove={() => removeBlock(block.id)}
+                          onUpdate={(content) => updateBlock(block.id, content)}
+                          isSaved={isSaved}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                </div>
 
-                  {sortableBlocks.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Type className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                      <p className="text-sm">Добавьте блоки контента</p>
+                <div className="relative flex justify-center pt-4 pb-12">
+                  <Button variant="outline" size="sm" onClick={() => setAddMenuOpen(!addMenuOpen)} className="gap-2 shadow-sm">
+                    <Plus className="w-4 h-4" /> Добавить блок
+                  </Button>
+                  {addMenuOpen && (
+                    <div className="absolute bottom-full mb-2 bg-card border border-border rounded-lg shadow-xl p-2 z-50 flex gap-1 animate-in fade-in slide-in-from-bottom-2" ref={menuContainerRef}>
+                      {BLOCK_TYPES.map(bt => (
+                        <button key={bt.type} onClick={() => addBlock(bt.type as Block["type"])}
+                          className="flex flex-col items-center gap-1 px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all text-xs min-w-[70px]">
+                          <bt.icon className="w-4 h-4" />
+                          {bt.label}
+                        </button>
+                      ))}
                     </div>
                   )}
-
-                  <div className="relative flex justify-center pt-4 pb-12">
-                    <Button variant="outline" size="sm" onClick={() => setAddMenuOpen(!addMenuOpen)} className="gap-2 shadow-sm">
-                      <Plus className="w-4 h-4" /> Добавить блок
-                    </Button>
-                    
-                    {addMenuOpen && (
-                      <div className="absolute bottom-full mb-2 bg-card border border-border rounded-lg shadow-xl p-2 z-50 flex gap-1 animate-in fade-in slide-in-from-bottom-2" ref={menuContainerRef}>
-                        {BLOCK_TYPES.map(bt => (
-                          <button key={bt.type} onClick={() => addBlock(bt.type as Block["type"])}
-                            className="flex flex-col items-center gap-1 px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all text-xs min-w-[70px]">
-                            <bt.icon className="w-4 h-4" />
-                            {bt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
-              </ScrollArea>
-            </ResizablePanel>
+              </div>
+            </ScrollArea>
+          </ResizablePanel>
 
-            <ResizableHandle withHandle className="bg-border/50" />
-            
-            {/* PREVIEW PANEL */}
-            <ResizablePanel 
-              defaultSize={50} 
-              minSize={25} 
-              className="flex flex-col bg-muted/10"
-            >
-              <ScrollArea className="flex-1">
-                <div className="min-h-full p-4 md:p-8 flex justify-center items-start">
-                  <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
+          <ResizableHandle withHandle className={cn("bg-border/40", isMobile ? "h-2" : "w-2")} />
+          
+          <ResizablePanel 
+            order={isMobile ? 1 : 2}
+            defaultSize={50} 
+            minSize={25} 
+            className="flex flex-col min-h-0 min-w-0 bg-muted/10"
+          >
+            <ScrollArea className="flex-1 w-full h-full">
+              <div className="min-h-full w-full flex justify-center p-4 md:p-12 overflow-x-auto">
+                <div className="shrink-0 shadow-2xl h-fit">
+                    <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
                 </div>
-              </ScrollArea>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </main>
-      </div>
+              </div>
+            </ScrollArea>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </main>
     </div>
   );
 }
