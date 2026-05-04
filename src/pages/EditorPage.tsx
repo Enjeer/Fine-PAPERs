@@ -417,7 +417,7 @@ const handleDownload = async () => {
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
             <ScrollArea className="flex-1 w-full h-full">
-              <div className="min-h-full w-full flex justify-center p-4 md:p-12 overflow-x-auto">
+              <div className="min-h-full w-full flex justify-center overflow-x-auto">
                 <div className="shrink-0 shadow-2xl h-fit">
                     <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
                 </div>
