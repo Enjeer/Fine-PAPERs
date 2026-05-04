@@ -12,8 +12,6 @@ export default function MainLayout() {
       <main 
         className={cn(
           "flex-1 min-w-0 transition-all duration-300",
-          // Динамически меняем отступ в зависимости от состояния
-          // На мобилках (до md) отступ 0, так как сайдбар выезжает поверх
           isCollapsed ? "md:ml-20" : "md:ml-80", 
           "ml-0" 
         )}

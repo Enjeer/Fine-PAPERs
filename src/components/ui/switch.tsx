@@ -9,7 +9,7 @@ const Switch = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
 >(({ className, ...props }, ref) => {
   const { theme } = useTheme();
-
+  
   return (
     <SwitchPrimitives.Root
       className={cn(

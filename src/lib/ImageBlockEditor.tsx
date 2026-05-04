@@ -8,6 +8,7 @@ interface ImageBlockEditorProps {
     content: {
         url?: string;
         caption?: string;
+        source?: string;
         file?: File;
     };
     isSaved?: boolean;
@@ -15,7 +16,7 @@ interface ImageBlockEditorProps {
 }
 
 export default function ImageBlockEditor({ content, onChange, isSaved }: ImageBlockEditorProps) {
-    const { url, caption, file } = content;
+    const { url, caption, source, file } = content;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -134,6 +135,12 @@ export default function ImageBlockEditor({ content, onChange, isSaved }: ImageBl
                 value={caption || ""}
                 onChange={(e) => onChange({ ...content, caption: e.target.value })}
                 placeholder="Добавить подпись к рисунку..."
+                className="text-sm italic border-none bg-muted/30 focus-visible:ring-1"
+            />
+            <Input
+                value={source || ""}
+                onChange={(e) => onChange({ ...content, caption: e.target.value })}
+                placeholder="Источник..."
                 className="text-sm italic border-none bg-muted/30 focus-visible:ring-1"
             />
         </div>

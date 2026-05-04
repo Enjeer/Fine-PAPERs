@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userToSave: User = {
         id: data.user_id || "",
-        email: data.email || email,
+        email: data.email || email,  
         user_name: data.user_name || user_name
       };
 

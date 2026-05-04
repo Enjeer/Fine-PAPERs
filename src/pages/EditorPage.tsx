@@ -20,13 +20,13 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, Plus, Trash2, GripVertical, Type, Heading, Image, Table, FileText, Save,
   ChevronUp, ChevronDown, Lock,
   LoaderCircle, Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { 
   ResizablePanelGroup, 
@@ -52,6 +52,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { api } from "@/lib/axios";
+import { isMobile } from 'react-device-detect';
 
 const BLOCK_TYPES = [
   { type: "heading", label: "Заголовок", icon: Heading },
@@ -343,7 +344,7 @@ const handleDownload = async () => {
       </header>
 
       {/* Editor + Preview */}
-        <ResizablePanelGroup direction="horizontal" className="flex-1">
+        <ResizablePanelGroup direction={isMobile? 'vertical' : 'horizontal'} className="flex-1">
           <ResizablePanel defaultSize={50} minSize={30}>
             <div className="h-full overflow-y-auto bg-background">
               <div className="max-w-3xl mx-auto py-8 px-4 space-y-3">

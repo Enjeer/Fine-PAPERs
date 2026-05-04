@@ -284,7 +284,7 @@ function PreviewBlock({ block, imgNum, tabNum, projectType}: { block: Block; img
       return (
         <div className="flex flex-col justify-between h-full text-center py-2 font-serif">
           <div className="space-y-4">
-            <div className="text-[12pt] leading-tight uppercase">
+            <div className="text-[11pt] leading-tight uppercase">
               <p>Министерство образования Республики Беларусь</p>
               <p>УО «{c.university || "БЕЛОРУССКИЙ ГОСУДАРСТВЕННЫЙ ЭКОНОМИЧЕСКИЙ УНИВЕРСИТЕТ"}»</p>
             </div>
@@ -293,7 +293,7 @@ function PreviewBlock({ block, imgNum, tabNum, projectType}: { block: Block; img
             </div>
           </div>
           <div className="space-y-6 flex flex-col items-center">
-            <h1 className="text-[18pt] font-bold tracking-widest preview">{types[projectType]}</h1>
+            <h1 className="text-[18pt] tracking-widest preview">{types[projectType]}</h1>
             <div className="text-[14pt] space-y-2 w-fit">
               <p>по дисциплине: <span className="font-medium w-fit">{c.subject || "..."}</span></p>
               <p>на тему: <span className="font-medium w-fit">{c.title || "..."}</span></p>
@@ -373,6 +373,7 @@ function PreviewBlock({ block, imgNum, tabNum, projectType}: { block: Block; img
             <figure className="inline-block">
               <img src={block.content.url} className="max-h-[100mm] max-w-full object-contain mx-auto border" />
               <figcaption className="text-[11pt] italic mt-2">Рисунок {imgNum} — {block.content.caption}</figcaption>
+              <figcaption className="text-[11pt] italic mt-2">Примечание — Источник: {block.content.source}</figcaption>
             </figure>
           ) : <div className="p-4 border border-dashed text-muted-foreground">[Изображение]</div>}
         </div>
