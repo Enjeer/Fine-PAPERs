@@ -416,13 +416,25 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-          <ScrollArea className="flex-1 w-full h-full [&_.scroll-area-viewport]:w-[21cm]">
-            <div className="flex justify-center items-start pt-8 h-[29.7cm]">
-              <div className="w-[21cm] max-w-full shadow-2xl mx-auto">
-                    <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
+            <div className="flex-1 w-full h-full relative overflow-hidden group">
+              <ScrollArea className="h-full w-full">
+                <div className="min-h-full w-full flex justify-center p-4 md:p-8">
+                  <div className="relative shrink-0 shadow-2xl bg-white origin-top transition-transform duration-200 ease-out"
+                      style={{
+                        width: '210mm',
+                        minHeight: '297mm',
+                        transform: isMobile ? 'scale(0.4)' : 'scale(var(--preview-scale, 1))',
+                      }}
+                  >
+                    <DocumentPreview 
+                      blocks={blocks} 
+                      projectName={projectName} 
+                      projectType={project.type}
+                    />
+                  </div>
                 </div>
-              </div>
-            </ScrollArea>
+              </ScrollArea>
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
