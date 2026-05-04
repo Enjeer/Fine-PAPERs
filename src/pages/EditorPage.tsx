@@ -237,6 +237,7 @@ export default function EditorPage() {
         await updateBlocks(projectId!, blocks);
         setIsDirty(false);
         toast({ title: "Автосохранение выполнено" });
+        console.log(isMobile);
       } catch (e) {
         console.error("Auto-save failed", e);
       }
