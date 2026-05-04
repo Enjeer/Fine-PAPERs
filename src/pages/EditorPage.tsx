@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProjects, type Block } from "@/lib/projects-context";
 import ImageBlockEditor from "@/lib/ImageBlockEditor";
@@ -111,7 +111,7 @@ export default function EditorPage() {
       setProjectName(project.name);
       setIsInitialized(true);
     }
-  }, [project, isInitialized]);
+  }, [project, isInitialized, projectId]);
 
   const [projectName, setProjectName] = useState(project?.name || "");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -304,18 +304,19 @@ const handleDownload = async () => {
     });
   };
 
-  const enrichedBlocks = getBlocksWithMetadata(sortableBlocks);
+  const enrichedBlocks = useMemo(() => {
+    return getBlocksWithMetadata(sortableBlocks);
+  }, [sortableBlocks]);
 
   useEffect(() => {
     const updateScale = () => {
       if (!previewContainerRef.current) return;
-    
+      
       const containerWidth = Math.floor(previewContainerRef.current.offsetWidth - 64);
       const docWidth = 794; 
-      
       const newScale = containerWidth < docWidth ? containerWidth / docWidth : 1;
 
-      setScale(prev => Math.abs(prev - newScale) > 0.001 ? newScale : prev);
+      setScale(prev => Math.abs(prev - newScale) > 0.01 ? newScale : prev);
     };
 
     const resizeObserver = new ResizeObserver(() => {
