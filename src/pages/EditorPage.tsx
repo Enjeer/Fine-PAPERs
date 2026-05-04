@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProjects, type Block } from "@/lib/projects-context";
 import ImageBlockEditor from "@/lib/ImageBlockEditor";
@@ -85,8 +85,6 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const project = getProject(projectId || "");
   const [isInitialized, setIsInitialized] = useState(false);
-  const previewContainerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
 
   const [blocks, setBlocks] = useState<Block[]>(() => {
     const existing = Array.isArray(project?.blocks) 
@@ -111,7 +109,7 @@ export default function EditorPage() {
       setProjectName(project.name);
       setIsInitialized(true);
     }
-  }, [project, isInitialized, projectId]);
+  }, [project, isInitialized]);
 
   const [projectName, setProjectName] = useState(project?.name || "");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -304,34 +302,7 @@ const handleDownload = async () => {
     });
   };
 
-  const enrichedBlocks = useMemo(() => {
-    return getBlocksWithMetadata(sortableBlocks);
-  }, [sortableBlocks]);
-
-  useEffect(() => {
-    const updateScale = () => {
-      if (!previewContainerRef.current) return;
-      
-      const containerWidth = Math.floor(previewContainerRef.current.offsetWidth - 64);
-      const docWidth = 794; 
-      const newScale = containerWidth < docWidth ? containerWidth / docWidth : 1;
-
-      setScale(prev => Math.abs(prev - newScale) > 0.01 ? newScale : prev);
-    };
-
-    const resizeObserver = new ResizeObserver(() => {
-      window.requestAnimationFrame(() => {
-        updateScale();
-      });
-    });
-
-    if (previewContainerRef.current) {
-      resizeObserver.observe(previewContainerRef.current);
-    }
-    
-    updateScale();
-    return () => resizeObserver.disconnect();
-  }, []);
+  const enrichedBlocks = getBlocksWithMetadata(sortableBlocks);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground">
@@ -445,17 +416,16 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <div ref={previewContainerRef} className="flex-1 w-full h-full overflow-hidden">
+            <div className="flex-1 w-full h-full relative overflow-hidden group">
               <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex justify-center p-8">
-                    <div 
-                      style={{ 
-                        transform: `scale(${scale})`, 
-                        transformOrigin: 'top center',
-                        width: '210mm' 
-                      }} 
-                      className="shrink-0 shadow-2xl bg-white"
-                    >
+                <div className="min-h-full w-full flex justify-center p-4 md:p-8">
+                  <div className="relative shrink-0 shadow-2xl bg-white origin-top transition-transform duration-200 ease-out"
+                      style={{
+                        width: '210mm',
+                        minHeight: '297mm',
+                        transform: isMobile ? 'scale(0.4)' : 'scale(var(--preview-scale, 1))',
+                      }}
+                  >
                     <DocumentPreview 
                       blocks={blocks} 
                       projectName={projectName} 
