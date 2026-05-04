@@ -344,7 +344,7 @@ const handleDownload = async () => {
       </header>
 
       {/* Editor + Preview */}
-        <ResizablePanelGroup direction="horizontal" className="flex-1">
+        <ResizablePanelGroup direction={isMobile? "vertical" : "horizontal"} className="flex-1">
           <ResizablePanel defaultSize={50} minSize={30}>
             <div className="h-full overflow-y-auto bg-background">
               <div className="max-w-3xl mx-auto py-8 px-4 space-y-3">
