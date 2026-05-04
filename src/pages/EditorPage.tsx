@@ -418,9 +418,9 @@ const handleDownload = async () => {
           >
             <div className="flex-1 w-full h-full relative overflow-hidden @container">
               <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex flex-col items-center py-8">
+                <div className="min-h-full w-full flex flex-col items-center">
                   <div 
-                    className="shrink-0 shadow-2xl bg-white"
+                    className="shadow-2xl bg-white"
                     style={{
                       width: '210mm',
                       minHeight: '297mm',
