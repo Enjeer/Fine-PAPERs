@@ -416,15 +416,19 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <div className="flex-1 w-full h-full relative overflow-hidden group">
+            <div className="flex-1 w-full h-full relative overflow-hidden @container">
               <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex justify-center p-4 md:p-8">
-                  <div className="relative shrink-0 shadow-2xl bg-white origin-top transition-transform duration-200 ease-out"
-                      style={{
-                        width: '210mm',
-                        minHeight: '297mm',
-                        transform: isMobile ? 'scale(0.4)' : 'scale(var(--preview-scale, 1))',
-                      }}
+                <div className="min-h-full w-full flex flex-col items-center py-8">
+                  <div 
+                    className="shrink-0 shadow-2xl bg-white"
+                    style={{
+                      width: '210mm',
+                      minHeight: '297mm',
+                      transform: isMobile 
+                        ? 'scale(0.4)' 
+                        : 'scale(min(calc(90cqw / 794), 1))',
+                      transformOrigin: 'top center',
+                    }}
                   >
                     <DocumentPreview 
                       blocks={blocks} 
