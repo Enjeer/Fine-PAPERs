@@ -85,6 +85,8 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const project = getProject(projectId || "");
   const [isInitialized, setIsInitialized] = useState(false);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
 
   const [blocks, setBlocks] = useState<Block[]>(() => {
     const existing = Array.isArray(project?.blocks) 
@@ -304,6 +306,27 @@ const handleDownload = async () => {
 
   const enrichedBlocks = getBlocksWithMetadata(sortableBlocks);
 
+  useEffect(() => {
+    const updateScale = () => {
+      if (!previewContainerRef.current) return;
+      
+      const containerWidth = previewContainerRef.current.offsetWidth - 64; // 64 - это отступы (p-8)
+      const docWidth = 794; // 210mm в пикселях при 96dpi
+      
+      if (containerWidth < docWidth) {
+        setScale(containerWidth / docWidth);
+      } else {
+        setScale(1);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(updateScale);
+    if (previewContainerRef.current) resizeObserver.observe(previewContainerRef.current);
+    
+    updateScale();
+    return () => resizeObserver.disconnect();
+  }, []);
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground">
       <header className="border-b border-border bg-card px-4 py-3 flex items-center gap-3 shrink-0 z-20">
@@ -416,16 +439,17 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <div className="flex-1 w-full h-full relative overflow-hidden group">
+            <div ref={previewContainerRef} className="flex-1 w-full h-full overflow-hidden">
               <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex justify-center p-4 md:p-8">
-                  <div className="relative shrink-0 shadow-2xl bg-white origin-top transition-transform duration-200 ease-out"
-                      style={{
-                        width: '210mm',
-                        minHeight: '297mm',
-                        transform: isMobile ? 'scale(0.4)' : 'scale(var(--preview-scale, 1))',
-                      }}
-                  >
+                <div className="min-h-full w-full flex justify-center p-8">
+                    <div 
+                      style={{ 
+                        transform: `scale(${scale})`, 
+                        transformOrigin: 'top center',
+                        width: '210mm' 
+                      }} 
+                      className="shrink-0 shadow-2xl bg-white"
+                    >
                     <DocumentPreview 
                       blocks={blocks} 
                       projectName={projectName} 
