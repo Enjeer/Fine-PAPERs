@@ -139,7 +139,7 @@ export default function ImageBlockEditor({ content, onChange, isSaved }: ImageBl
             />
             <Input
                 value={source || ""}
-                onChange={(e) => onChange({ ...content, caption: e.target.value })}
+                onChange={(e) => onChange({ ...content, source: e.target.value })}
                 placeholder="Источник..."
                 className="text-sm italic border-none bg-muted/30 focus-visible:ring-1"
             />

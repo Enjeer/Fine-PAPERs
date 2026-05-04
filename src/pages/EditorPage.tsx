@@ -53,6 +53,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { api } from "@/lib/axios";
 import { isMobile } from 'react-device-detect';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const BLOCK_TYPES = [
   { type: "heading", label: "Заголовок", icon: Heading },
@@ -347,80 +348,86 @@ const handleDownload = async () => {
       {/* Editor + Preview */}
         <ResizablePanelGroup direction={isMobile? "vertical" : "horizontal"} className="flex-1">
           <ResizablePanel defaultSize={50} minSize={30}>
-            <div className="h-full overflow-y-auto bg-background">
-              <div className="max-w-3xl mx-auto py-8 px-4 space-y-3">
-                {/* Title page block — always first, not draggable */}
-                {titleBlock && (
-                  <Card className="border-border border-primary/20 overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-primary/5">
-                        <Lock className="w-3.5 h-3.5 text-primary/50" />
-                        <span className="text-xs text-primary font-medium uppercase tracking-wider flex-1">
-                          Титульный лист
-                        </span>
-                      </div>
-                      <div className="p-4">
-                        <BlockEditor block={titleBlock} onChange={content => updateBlock(titleBlock.id, content)} isSaved={isSaved} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+            
+            
+            <ScrollArea>
+              <div className="h-full overflow-y-auto bg-background">
+                <div className="max-w-3xl mx-auto py-8 px-4 space-y-3">
+                  {/* Title page block — always first, not draggable */}
+                  {titleBlock && (
+                    <Card className="border-border border-primary/20 overflow-hidden">
+                      <CardContent className="p-0">
+                        <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-primary/5">
+                          <Lock className="w-3.5 h-3.5 text-primary/50" />
+                          <span className="text-xs text-primary font-medium uppercase tracking-wider flex-1">
+                            Титульный лист
+                          </span>
+                        </div>
+                        <div className="p-4">
+                          <BlockEditor block={titleBlock} onChange={content => updateBlock(titleBlock.id, content)} isSaved={isSaved} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
-                {/* Auto-generated TOC indicator */}
-                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-dashed border-border">
-                  <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Содержание — генерируется автоматически из заголовков</span>
-                </div>
-
-                {/* Sortable content blocks */}
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={enrichedBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                    {enrichedBlocks.map((block, idx) => (
-                      <SortableBlockCard
-                        key={block.id}
-                        block={block}
-                        index={idx}
-                        totalCount={enrichedBlocks.length}
-                        onMove={(dir) => moveBlock(block.id, dir)} 
-                        onRemove={() => removeBlock(block.id)}
-                        onUpdate={(content) => updateBlock(block.id, content)}
-                        isSaved={isSaved}
-                      />
-                    ))}
-                  </SortableContext>
-                </DndContext>
-
-                {sortableBlocks.length === 0 && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Type className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Добавьте блоки контента</p>
+                  {/* Auto-generated TOC indicator */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-dashed border-border">
+                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Содержание — генерируется автоматически из заголовков</span>
                   </div>
-                )}
 
-                <div className="relative flex justify-center pt-2">
-                  <Button variant="outline" size="sm" onClick={() => setAddMenuOpen(!addMenuOpen)} className="gap-2 text-muted-foreground">
-                    <Plus className="w-4 h-4" /> Добавить блок
-                  </Button>
-                  {addMenuOpen && (
-                    <div className="absolute top-full mt-2 bg-card border border-border rounded-lg shadow-lg p-2 z-10 flex gap-1 animate-fade-in" ref={menuContainerRef}>
-                      {BLOCK_TYPES.map(bt => (
-                        <button key={bt.type} onClick={() => addBlock(bt.type as Block["type"])}
-                          className="flex flex-col items-center gap-1 px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs">
-                          <bt.icon className="w-4 h-4" />
-                          {bt.label}
-                        </button>
+                  {/* Sortable content blocks */}
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={enrichedBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                      {enrichedBlocks.map((block, idx) => (
+                        <SortableBlockCard
+                          key={block.id}
+                          block={block}
+                          index={idx}
+                          totalCount={enrichedBlocks.length}
+                          onMove={(dir) => moveBlock(block.id, dir)} 
+                          onRemove={() => removeBlock(block.id)}
+                          onUpdate={(content) => updateBlock(block.id, content)}
+                          isSaved={isSaved}
+                        />
                       ))}
+                    </SortableContext>
+                  </DndContext>
+
+                  {sortableBlocks.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Type className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm">Добавьте блоки контента</p>
                     </div>
                   )}
+
+                  <div className="relative flex justify-center pt-2">
+                    <Button variant="outline" size="sm" onClick={() => setAddMenuOpen(!addMenuOpen)} className="gap-2 text-muted-foreground">
+                      <Plus className="w-4 h-4" /> Добавить блок
+                    </Button>
+                    {addMenuOpen && (
+                      <div className="absolute top-full mt-2 bg-card border border-border rounded-lg shadow-lg p-2 z-10 flex gap-1 animate-fade-in" ref={menuContainerRef}>
+                        {BLOCK_TYPES.map(bt => (
+                          <button key={bt.type} onClick={() => addBlock(bt.type as Block["type"])}
+                            className="flex flex-col items-center gap-1 px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs">
+                            <bt.icon className="w-4 h-4" />
+                            {bt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
           
           <ResizablePanel defaultSize={50} minSize={25}>
-            <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
+            <ScrollArea>
+              <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
+            </ScrollArea>
           </ResizablePanel>
         </ResizablePanelGroup>
     </div>
