@@ -32,14 +32,8 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
     const updateZoom = () => {
       if (!containerRef.current) return;
       const parentWidth = containerRef.current.offsetWidth;
-      const padding = 48;
-      const temp = document.createElement('div');
-      temp.style.width = '210mm';
-      document.body.appendChild(temp);
-      const a4WidthPx = temp.offsetWidth;
-      document.body.removeChild(temp);
-
-      const availableWidth = parentWidth - padding;
+      const availableWidth = parentWidth - 48; // padding
+      const a4WidthPx = PAGE_WIDTH_MM * 3.78; 
       setZoomLevel(Math.min(availableWidth / a4WidthPx, 1));
     };
     const observer = new ResizeObserver(updateZoom);

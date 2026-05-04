@@ -418,33 +418,23 @@ const handleDownload = async () => {
           >
             <div className="flex-1 w-full h-full relative overflow-hidden @container/preview">
               <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex flex-col items-center px-4">
+                <div className="min-h-full w-full flex flex-col items-center py-8 px-4">
+                  
                   <div 
-                    className="relative flex justify-center"
+                    className="shadow-2xl bg-white shrink-0"
                     style={{
-                      width: 'min(100%, 210mm)', 
-                      height: 'calc(min(100cqw - 32px, 210mm) * 1.414)', 
+                      width: '210mm',
+                      minHeight: '297mm',
+                      zoom: isMobile 
+                        ? '0.4' 
+                        : 'min(1, calc((100cqw - 32px) / 794))',
                     }}
                   >
-                    <div 
-                      className="shadow-2xl bg-white origin-top"
-                      style={{
-                        position: 'absolute',
-                        width: '210mm',
-                        minHeight: '297mm',
-                        transform: isMobile 
-                          ? 'scale(0.4)' 
-                          : 'scale(calc(min(100cqw - 32px, 794px) / 794))', 
-                      }}
-                    >
-                      <div className="w-full h-full">
-                        <DocumentPreview 
-                          blocks={blocks} 
-                          projectName={projectName} 
-                          projectType={project.type}
-                        />
-                      </div>
-                    </div>
+                    <DocumentPreview 
+                      blocks={blocks} 
+                      projectName={projectName} 
+                      projectType={project.type}
+                    />
                   </div>
 
                 </div>
