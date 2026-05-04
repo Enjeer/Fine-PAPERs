@@ -309,19 +309,24 @@ const handleDownload = async () => {
   useEffect(() => {
     const updateScale = () => {
       if (!previewContainerRef.current) return;
+    
+      const containerWidth = Math.floor(previewContainerRef.current.offsetWidth - 64);
+      const docWidth = 794; 
       
-      const containerWidth = previewContainerRef.current.offsetWidth - 64; // 64 - это отступы (p-8)
-      const docWidth = 794; // 210mm в пикселях при 96dpi
-      
-      if (containerWidth < docWidth) {
-        setScale(containerWidth / docWidth);
-      } else {
-        setScale(1);
-      }
+      const newScale = containerWidth < docWidth ? containerWidth / docWidth : 1;
+
+      setScale(prev => Math.abs(prev - newScale) > 0.001 ? newScale : prev);
     };
 
-    const resizeObserver = new ResizeObserver(updateScale);
-    if (previewContainerRef.current) resizeObserver.observe(previewContainerRef.current);
+    const resizeObserver = new ResizeObserver(() => {
+      window.requestAnimationFrame(() => {
+        updateScale();
+      });
+    });
+
+    if (previewContainerRef.current) {
+      resizeObserver.observe(previewContainerRef.current);
+    }
     
     updateScale();
     return () => resizeObserver.disconnect();
