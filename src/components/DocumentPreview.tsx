@@ -213,7 +213,6 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
           className="p-8 flex flex-col items-center gap-6 origin-top" 
           style={{ 
             zoom: zoomLevel,
-            minHeight: "100%" 
           }}
         >
           {blocks.length === 0 ? (

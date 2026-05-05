@@ -13,10 +13,10 @@ export default function MainLayout() {
         className={cn(
           "flex-1 min-w-0 transition-all duration-300",
           isCollapsed ? "md:ml-20" : "md:ml-80", 
-          "ml-0",
+          "ml-0" 
         )}
       >
-        <div className="pt-16 md:pt-8  w-full max-w-full">
+        <div className="md:p-8 pt-16 md:pt-0 w-full max-w-full">
           <Outlet />
         </div>
       </main>
