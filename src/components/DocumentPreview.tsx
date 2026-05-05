@@ -208,7 +208,7 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
         {isCalculating && <span className="text-[10px] animate-pulse text-primary">Оптимизация страниц...</span>}
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="flex-1 w-full h-full">
         <div className="p-6 flex flex-col items-center gap-2" style={{ zoom: zoomLevel }}>
           {blocks.length === 0 ? (
             <div className={PAGE_STYLE} style={FONT_STYLE}>
@@ -238,7 +238,7 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
 
               {paginatedPages.map((pageBlocks, pageIdx) => (
                 <div key={pageIdx} className={PAGE_STYLE} style={FONT_STYLE}>
-                  <div className="flex-1">
+                  <div className="p-6 flex flex-col items-center gap-2 origin-top" style={{ transform: `scale(${zoomLevel})` }}>
                     {pageBlocks.map((block, bIdx) => (
                       <PreviewBlock 
                         key={`${pageIdx}-${bIdx}`} 
