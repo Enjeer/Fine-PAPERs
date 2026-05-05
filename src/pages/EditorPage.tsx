@@ -452,6 +452,9 @@ const handleDownload = async () => {
                       minHeight: '1123px', 
                       transform: `scale(${scale})`,
                       marginBottom: `calc(1123px * (${scale} - 1))`,
+                      
+                      marginLeft: scale < 1 ? `calc(794px * (${scale} - 1) / 2)` : '0',
+                      marginRight: scale < 1 ? `calc(794px * (${scale} - 1) / 2)` : '0',
                     }}
                   >
                     <DocumentPreview 
