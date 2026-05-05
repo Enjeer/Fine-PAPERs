@@ -116,8 +116,9 @@ export default function EditorPage() {
   useEffect(() => {
     const updateScale = () => {
       if (!containerRef.current) return;
+      
       const parentWidth = containerRef.current.offsetWidth;
-      const padding = 32;
+      const padding = 48;
       const availableWidth = parentWidth - padding;
       const targetWidth = 794;
 
@@ -131,8 +132,8 @@ export default function EditorPage() {
 
     const observer = new ResizeObserver(updateScale);
     if (containerRef.current) observer.observe(containerRef.current);
+    
     updateScale();
-
     return () => observer.disconnect();
   }, [isMobile]);
 
@@ -441,22 +442,20 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <div 
-              ref={containerRef} 
-              className="flex-1 w-full h-full relative overflow-hidden"
-            >
+            <div ref={containerRef} className="flex-1 w-full h-full relative overflow-hidden">
               <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex flex-col items-center py-8 px-4 overflow-x-hidden">
+                <div className="min-h-full w-full flex flex-col items-center py-12 px-4">
                   
                   <div 
-                    className="shadow-2xl bg-white shrink-0 origin-top transition-all duration-200"
+                    className="shadow-2xl bg-white shrink-0 origin-top transition-transform duration-200"
                     style={{
                       width: '794px',
                       minHeight: '1123px', 
                       transform: `scale(${scale})`,
                       marginBottom: `calc(1123px * (${scale} - 1))`,
-                      marginRight: `calc(794px * (${scale} - 1))`,
-                      marginLeft: `calc(794px * (${scale} - 1))`,
+                      
+                      marginLeft: scale < 1 ? `calc(794px * (${scale} - 1) / 2)` : '0',
+                      marginRight: scale < 1 ? `calc(794px * (${scale} - 1) / 2)` : '0',
                     }}
                   >
                     <DocumentPreview 
