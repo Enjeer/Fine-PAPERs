@@ -16,7 +16,7 @@ export default function MainLayout() {
           "ml-0" 
         )}
       >
-        <div className="md:p-8 pt-16 md:pt-0 w-full max-w-full">
+        <div className="pt-16 md:pt-0 w-full max-w-full">
           <Outlet />
         </div>
       </main>
