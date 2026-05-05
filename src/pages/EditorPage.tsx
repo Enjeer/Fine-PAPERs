@@ -113,24 +113,26 @@ export default function EditorPage() {
     }
   }, [project, isInitialized]);
 
-    useEffect(() => {
+  useEffect(() => {
     const updateScale = () => {
       if (!containerRef.current) return;
-      const containerWidth = containerRef.current.offsetWidth - 32;
+      const parentWidth = containerRef.current.offsetWidth;
+      const padding = 32;
+      const availableWidth = parentWidth - padding;
       const targetWidth = 794;
-      
+
       if (isMobile) {
         setScale(0.4);
       } else {
-        const newScale = Math.min(1, containerWidth / targetWidth);
+        const newScale = Math.min(1, availableWidth / targetWidth);
         setScale(newScale);
       }
     };
 
     const observer = new ResizeObserver(updateScale);
     if (containerRef.current) observer.observe(containerRef.current);
-    
     updateScale();
+
     return () => observer.disconnect();
   }, [isMobile]);
 
@@ -439,20 +441,22 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <div className="flex-1 w-full h-full relative overflow-hidden @container/preview">
+            <div 
+              ref={containerRef} 
+              className="flex-1 w-full h-full relative overflow-hidden"
+            >
               <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex flex-col items-center py-8 px-4">
+                <div className="min-h-full w-full flex flex-col items-center py-8 px-4 overflow-x-hidden">
                   
                   <div 
-                    className="shadow-2xl bg-white shrink-0 origin-top transition-transform duration-200"
+                    className="shadow-2xl bg-white shrink-0 origin-top transition-all duration-200"
                     style={{
                       width: '794px',
-                      minHeight: '1123px',
-                      transform: isMobile 
-                        ? 'scale(0.4)' 
-                        : `scale(min(1, calc((100cqw - 40px) / 794)))`,
-                      marginBottom: `calc(1123px * (min(1, (100cqw - 40px) / 794) - 1))`,
-                      marginTop: '0px'
+                      minHeight: '1123px', 
+                      transform: `scale(${scale})`,
+                      marginBottom: `calc(1123px * (${scale} - 1))`,
+                      marginRight: `calc(794px * (${scale} - 1))`,
+                      marginLeft: `calc(794px * (${scale} - 1))`,
                     }}
                   >
                     <DocumentPreview 
