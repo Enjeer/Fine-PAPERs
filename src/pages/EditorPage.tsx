@@ -445,15 +445,16 @@ const handleDownload = async () => {
             <div ref={containerRef} className="flex-1 w-full h-full relative overflow-hidden">
               <ScrollArea className="h-full w-full">
                 <div className="min-h-full w-full flex flex-col items-center">
-                
                   <div 
-                    className="shadow-2xl bg-white shrink-0 transition-transform duration-200"
+                    className="shadow-2xl bg-white shrink-0 origin-top transition-transform duration-200"
                     style={{
                       width: '794px',
                       minHeight: '1123px', 
                       transform: `scale(${scale})`,
-                      marginBottom: `calc(1123px * (${scale} - 1))`, 
-                      transformOrigin: 'top center',
+                      marginBottom: `calc(1123px * (${scale} - 1))`,
+                      
+                      // marginLeft: scale < 1 ? `calc(794px * (${scale} - 1) / 2)` : '0',
+                      // marginRight: scale < 1 ? `calc(794px * (${scale} - 1) / 2)` : '0',
                     }}
                   >
                     <DocumentPreview 
