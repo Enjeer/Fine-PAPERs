@@ -53,7 +53,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { api } from "@/lib/axios";
 import { isMobile } from 'react-device-detect';
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const BLOCK_TYPES = [
   { type: "heading", label: "Заголовок", icon: Heading },
@@ -85,8 +84,6 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const project = getProject(projectId || "");
   const [isInitialized, setIsInitialized] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
 
   const [blocks, setBlocks] = useState<Block[]>(() => {
     const existing = Array.isArray(project?.blocks) 
@@ -112,30 +109,6 @@ export default function EditorPage() {
       setIsInitialized(true);
     }
   }, [project, isInitialized]);
-
-  useEffect(() => {
-    const updateScale = () => {
-      if (!containerRef.current) return;
-      
-      const parentWidth = containerRef.current.offsetWidth;
-      const padding = 48;
-      const availableWidth = parentWidth - padding;
-      const targetWidth = 794;
-
-      if (isMobile) {
-        setScale(0.4);
-      } else {
-        const newScale = Math.min(1, availableWidth / targetWidth);
-        setScale(newScale);
-      }
-    };
-
-    const observer = new ResizeObserver(updateScale);
-    if (containerRef.current) observer.observe(containerRef.current);
-    
-    updateScale();
-    return () => observer.disconnect();
-  }, [isMobile]);
 
   const [projectName, setProjectName] = useState(project?.name || "");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -210,7 +183,6 @@ export default function EditorPage() {
 
   const handleSave = async () => {
     if (isSaving) return;
-    console.log(isMobile);
     setIsSaving(true);
 
     try {
@@ -265,6 +237,7 @@ export default function EditorPage() {
         await updateBlocks(projectId!, blocks);
         setIsDirty(false);
         toast({ title: "Автосохранение выполнено" });
+        console.log(isMobile);
       } catch (e) {
         console.error("Auto-save failed", e);
       }
@@ -331,8 +304,9 @@ const handleDownload = async () => {
   const enrichedBlocks = getBlocksWithMetadata(sortableBlocks);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground">
-      <header className="border-b border-border bg-card px-4 py-3 flex items-center gap-3 shrink-0 z-20">
+    <div className="h-full flex flex-col">
+      {/* Toolbar */}
+      <header className="border-b border-border bg-card px-4 py-3 flex items-center gap-3 shrink-0">
         <Button variant="ghost" size="icon" onClick={() => navigate("/projects")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -354,34 +328,36 @@ const handleDownload = async () => {
           </SelectContent>
         </Select>
         <Button onClick={handleSave} size="sm" className="gap-2">
-          {!isSaving ? <Save className="w-3.5 h-3.5" /> : <LoaderCircle className="w-3.5 h-3.5 animate-spin" />}
+          {!isSaving ? (
+            <Save className="w-3.5 h-3.5" />
+          ) : (
+            <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+          )}
           Сохранить
         </Button>
-        <Button variant="outline" disabled={isDownloading} onClick={handleDownload} size="sm" className="gap-2">
-          {!isDownloading ? <Download className="w-3.5 h-3.5" /> : <LoaderCircle className="w-3.5 h-3.5 animate-spin" />}
-          Скачать
+        <Button variant="outline" disabled={isDownloading? true : false} onClick={handleDownload} size="sm" className="gap-2">
+          {!isDownloading ? (
+            <Download className="w-3.5 h-3.5" />
+          ) : (
+            <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+          )}Скачать
         </Button>
       </header>
 
-      <main className="flex-1 min-h-0 min-w-0 overflow-hidden relative">
-        <ResizablePanelGroup 
-          direction={isMobile ? "vertical" : "horizontal"} 
-          className="h-full"
-        >
-          <ResizablePanel 
-            order={isMobile ? 1 : 2} 
-            defaultSize={isMobile ? 60 : 50}
-            minSize={30} 
-            className="flex flex-col min-h-0 min-w-0"
-          >
-            <ScrollArea className="flex-1 w-full h-full bg-background">
-              <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
+      {/* Editor + Preview */}
+        <ResizablePanelGroup direction={isMobile? "vertical" : "horizontal"} className="flex-1">
+          <ResizablePanel defaultSize={50} minSize={30}>
+            <div className="h-full overflow-y-auto bg-background">
+              <div className="max-w-3xl mx-auto py-8 px-4 space-y-3">
+                {/* Title page block — always first, not draggable */}
                 {titleBlock && (
-                  <Card className="border-border border-primary/20 overflow-hidden shadow-sm">
+                  <Card className="border-border border-primary/20 overflow-hidden">
                     <CardContent className="p-0">
                       <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-primary/5">
                         <Lock className="w-3.5 h-3.5 text-primary/50" />
-                        <span className="text-xs text-primary font-medium uppercase tracking-wider flex-1">Титульный лист</span>
+                        <span className="text-xs text-primary font-medium uppercase tracking-wider flex-1">
+                          Титульный лист
+                        </span>
                       </div>
                       <div className="p-4">
                         <BlockEditor block={titleBlock} onChange={content => updateBlock(titleBlock.id, content)} isSaved={isSaved} />
@@ -390,39 +366,46 @@ const handleDownload = async () => {
                   </Card>
                 )}
 
+                {/* Auto-generated TOC indicator */}
                 <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-dashed border-border">
                   <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Содержание — генерируется автоматически</span>
+                  <span className="text-xs text-muted-foreground">Содержание — генерируется автоматически из заголовков</span>
                 </div>
 
-                <div className="space-y-3">
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={enrichedBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                      {enrichedBlocks.map((block, idx) => (
-                        <SortableBlockCard
-                          key={block.id}
-                          block={block}
-                          index={idx}
-                          totalCount={enrichedBlocks.length}
-                          onMove={(dir) => moveBlock(block.id, dir)} 
-                          onRemove={() => removeBlock(block.id)}
-                          onUpdate={(content) => updateBlock(block.id, content)}
-                          isSaved={isSaved}
-                        />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-                </div>
+                {/* Sortable content blocks */}
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={enrichedBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                    {enrichedBlocks.map((block, idx) => (
+                      <SortableBlockCard
+                        key={block.id}
+                        block={block}
+                        index={idx}
+                        totalCount={enrichedBlocks.length}
+                        onMove={(dir) => moveBlock(block.id, dir)} 
+                        onRemove={() => removeBlock(block.id)}
+                        onUpdate={(content) => updateBlock(block.id, content)}
+                        isSaved={isSaved}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
 
-                <div className="relative flex justify-center pt-4 pb-12">
-                  <Button variant="outline" size="sm" onClick={() => setAddMenuOpen(!addMenuOpen)} className="gap-2 shadow-sm">
+                {sortableBlocks.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Type className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Добавьте блоки контента</p>
+                  </div>
+                )}
+
+                <div className="relative flex justify-center pt-2">
+                  <Button variant="outline" size="sm" onClick={() => setAddMenuOpen(!addMenuOpen)} className="gap-2 text-muted-foreground">
                     <Plus className="w-4 h-4" /> Добавить блок
                   </Button>
                   {addMenuOpen && (
-                    <div className="absolute bottom-full mb-2 bg-card border border-border rounded-lg shadow-xl p-2 z-50 flex gap-1 animate-in fade-in slide-in-from-bottom-2" ref={menuContainerRef}>
+                    <div className="absolute top-full mt-2 bg-card border border-border rounded-lg shadow-lg p-2 z-10 flex gap-1 animate-fade-in" ref={menuContainerRef}>
                       {BLOCK_TYPES.map(bt => (
                         <button key={bt.type} onClick={() => addBlock(bt.type as Block["type"])}
-                          className="flex flex-col items-center gap-1 px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all text-xs min-w-[70px]">
+                          className="flex flex-col items-center gap-1 px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs">
                           <bt.icon className="w-4 h-4" />
                           {bt.label}
                         </button>
@@ -431,45 +414,15 @@ const handleDownload = async () => {
                   )}
                 </div>
               </div>
-            </ScrollArea>
-          </ResizablePanel>
-
-          <ResizableHandle withHandle className={cn("bg-border/40", isMobile ? "h-2" : "w-2")} />
-          
-          <ResizablePanel 
-            order={isMobile ? 1 : 2}
-            defaultSize={50} 
-            minSize={25} 
-            className="flex flex-col min-h-0 min-w-0 bg-muted/10"
-          >
-            <div ref={containerRef} className="flex-1 w-full h-full relative overflow-hidden">
-              <ScrollArea className="h-full w-full">
-                <div className="min-h-full w-full flex flex-col items-center">
-                  <div 
-                    className="shadow-2xl bg-white shrink-0 origin-top transition-transform duration-200"
-                    style={{
-                      width: '794px',
-                      minHeight: '1123px', 
-                      transform: `scale(${scale})`,
-                      marginBottom: `calc(1123px * (${scale} - 1))`,
-                      
-                      marginLeft: scale < 1 ? `calc(794px * (${scale} - 1) / 2)` : '0',
-                      marginRight: scale < 1 ? `calc(794px * (${scale} - 1) / 2)` : '0',
-                    }}
-                  >
-                    <DocumentPreview 
-                      blocks={blocks} 
-                      projectName={projectName} 
-                      projectType={project.type}
-                    />
-                  </div>
-
-                </div>
-              </ScrollArea>
             </div>
           </ResizablePanel>
+
+          <ResizableHandle withHandle />
+          
+          <ResizablePanel defaultSize={50} minSize={25}>
+            <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
+          </ResizablePanel>
         </ResizablePanelGroup>
-      </main>
     </div>
   );
 }
