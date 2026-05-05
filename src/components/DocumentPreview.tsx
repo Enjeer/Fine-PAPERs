@@ -188,6 +188,7 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
 
   return (
     <div className="h-full w-full flex flex-col bg-muted/30 relative overflow-hidden" ref={containerRef}>
+      
       <div 
         ref={measureRef} 
         className="absolute pointer-events-none" 
@@ -202,15 +203,17 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
         }} 
       />
 
-      <div className="px-4 py-2 border-b border-border bg-card shrink-0 flex justify-between items-center z-10">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Предпросмотр</span>
-        {isCalculating && <span className="text-[10px] animate-pulse text-primary">Оптимизация страниц...</span>}
+      <div className="h-10 px-4 py-2 border-b border-border bg-card shrink-0 flex justify-between items-center z-10">
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Предпросмотр</span>
+        {isCalculating && <span className="text-[10px] animate-pulse text-primary font-medium">Оптимизация страниц...</span>}
       </div>
-      <ScrollArea className="flex-1 w-full">
+
+      <ScrollArea className="flex-1 w-full overflow-hidden">
         <div 
-          className="min-h-full p-8 flex flex-col items-center gap-4 origin-top transition-transform duration-200"
+          className="p-8 flex flex-col items-center gap-6 origin-top" 
           style={{ 
-            zoom: zoomLevel 
+            zoom: zoomLevel,
+            minHeight: "100%" 
           }}
         >
           {blocks.length === 0 ? (
@@ -226,7 +229,7 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
               )}
 
               <div className={PAGE_STYLE} style={FONT_STYLE}>
-                <h2 className="text-[16pt] font-bold text-center mb-8 uppercase preview">Содержание</h2>
+                <h2 className="text-[16pt] font-bold text-center mb-8 uppercase">Содержание</h2>
                 <div className="space-y-1">
                   {tocEntries.map((entry, i) => (
                     <div key={i} className="flex items-baseline gap-1" style={{ paddingLeft: `${(entry.level - 1) * 1.25}cm` }}>
