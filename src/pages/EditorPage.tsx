@@ -439,21 +439,20 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <div 
-              ref={containerRef}
-              className="flex-1 w-full h-full relative overflow-hidden"
-            >
+            <div className="flex-1 w-full h-full relative overflow-hidden @container/preview">
               <ScrollArea className="h-full w-full">
                 <div className="min-h-full w-full flex flex-col items-center py-8 px-4">
+                  
                   <div 
-                    className="shadow-2xl bg-white shrink-0 origin-top" // origin-top важен!
+                    className="shadow-2xl bg-white shrink-0 origin-top transition-transform duration-200"
                     style={{
-                      width: '210mm',
-                      minHeight: '297mm',
-                      transform: `scale(${scale})`,
-                      // Чтобы пустые поля не оставались после уменьшения:
-                      marginBottom: `calc(297mm * ${scale - 1})`, 
-                      marginRight: scale < 1 ? `calc(210mm * ${scale - 1})` : 0
+                      width: '794px',
+                      minHeight: '1123px',
+                      transform: isMobile 
+                        ? 'scale(0.4)' 
+                        : `scale(min(1, calc((100cqw - 40px) / 794)))`,
+                      marginBottom: `calc(1123px * (min(1, (100cqw - 40px) / 794) - 1))`,
+                      marginTop: '0px'
                     }}
                   >
                     <DocumentPreview 
@@ -462,6 +461,7 @@ const handleDownload = async () => {
                       projectType={project.type}
                     />
                   </div>
+
                 </div>
               </ScrollArea>
             </div>
