@@ -16,7 +16,7 @@ const CONTENT_MAX_HEIGHT_PX = (PAGE_HEIGHT_MM - PADDING_TOP_MM - PADDING_BOTTOM_
 
 const PAGE_STYLE = "bg-white text-black shadow-lg w-[210mm] px-[25mm] py-[20mm] text-[12pt] leading-[1.5] relative overflow-hidden flex flex-col shrink-0 mb-8";
 const FONT_STYLE = { 
-  fontFamily: "'Times New Roman', 'Liberation Serif', serif",
+  fontFamily: "'Times New Roman' serif",
   height: `${PAGE_HEIGHT_MM}mm`
 };
 
@@ -288,7 +288,7 @@ function PreviewBlock({ block, imgNum, tabNum, projectType}: { block: Block; img
     case "title-page": {
       const c = block.content;
       return (
-        <div className="flex flex-col justify-between h-full text-center py-2 font-serif">
+        <div className="flex flex-col justify-between h-full text-center py-2">
           <div className="space-y-4">
             <div className="text-[11pt] leading-tight uppercase">
               <p>Министерство образования Республики Беларусь</p>
