@@ -446,13 +446,12 @@ const handleDownload = async () => {
               <ScrollArea className="h-full w-full">
                 <div className="min-h-full w-full flex flex-col items-center">
                   <div 
-                    className="shadow-2xl bg-white shrink-0 transition-transform duration-200"
+                    className="shadow-2xl bg-white shrink-0 origin-top transition-transform duration-200"
                     style={{
                       width: '794px',
                       minHeight: '1123px', 
                       transform: `scale(${scale})`,
-                      marginBottom: `calc(1123px * (${scale} - 1))`, 
-                      transformOrigin: 'top center',
+                      marginBottom: `calc(1123px * (${scale} - 1))`,
                     }}
                   >
                     <DocumentPreview 
