@@ -187,8 +187,7 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
   const allTables = blocks.filter(b => b.type === "table");
 
   return (
-    <div className="h-full flex flex-col bg-muted/30 relative overflow-hidden" ref={containerRef}>
-      {/* calculation element */}
+    <div className="h-full w-full flex flex-col bg-muted/30 relative overflow-hidden" ref={containerRef}>
       <div 
         ref={measureRef} 
         className="absolute pointer-events-none" 
@@ -203,13 +202,17 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
         }} 
       />
 
-      <div className="px-4 py-2 border-b border-border bg-card shrink-0 flex justify-between items-center">
+      <div className="px-4 py-2 border-b border-border bg-card shrink-0 flex justify-between items-center z-10">
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Предпросмотр</span>
         {isCalculating && <span className="text-[10px] animate-pulse text-primary">Оптимизация страниц...</span>}
       </div>
-
-      <ScrollArea className="flex-1 w-full h-full">
-        <div className="p-6 flex flex-col items-center gap-2" style={{ zoom: zoomLevel }}>
+      <ScrollArea className="flex-1 w-full">
+        <div 
+          className="min-h-full p-8 flex flex-col items-center gap-4 origin-top transition-transform duration-200"
+          style={{ 
+            zoom: zoomLevel 
+          }}
+        >
           {blocks.length === 0 ? (
             <div className={PAGE_STYLE} style={FONT_STYLE}>
               <p className="text-gray-400 italic text-center mt-20">Документ пуст</p>
@@ -238,7 +241,7 @@ export default function DocumentPreview({ blocks, projectType }: DocumentPreview
 
               {paginatedPages.map((pageBlocks, pageIdx) => (
                 <div key={pageIdx} className={PAGE_STYLE} style={FONT_STYLE}>
-                  <div className="p-6 flex flex-col items-center gap-2 origin-top" style={{ transform: `scale(${zoomLevel})` }}>
+                  <div className="flex-1">
                     {pageBlocks.map((block, bIdx) => (
                       <PreviewBlock 
                         key={`${pageIdx}-${bIdx}`} 
