@@ -85,6 +85,8 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const project = getProject(projectId || "");
   const [isInitialized, setIsInitialized] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
 
   const [blocks, setBlocks] = useState<Block[]>(() => {
     const existing = Array.isArray(project?.blocks) 
@@ -110,6 +112,27 @@ export default function EditorPage() {
       setIsInitialized(true);
     }
   }, [project, isInitialized]);
+
+    useEffect(() => {
+    const updateScale = () => {
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.offsetWidth - 32;
+      const targetWidth = 794;
+      
+      if (isMobile) {
+        setScale(0.4);
+      } else {
+        const newScale = Math.min(1, containerWidth / targetWidth);
+        setScale(newScale);
+      }
+    };
+
+    const observer = new ResizeObserver(updateScale);
+    if (containerRef.current) observer.observe(containerRef.current);
+    
+    updateScale();
+    return () => observer.disconnect();
+  }, [isMobile]);
 
   const [projectName, setProjectName] = useState(project?.name || "");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -416,18 +439,21 @@ const handleDownload = async () => {
             minSize={25} 
             className="flex flex-col min-h-0 min-w-0 bg-muted/10"
           >
-            <div className="flex-1 w-full h-full relative overflow-hidden @container/preview">
+            <div 
+              ref={containerRef}
+              className="flex-1 w-full h-full relative overflow-hidden"
+            >
               <ScrollArea className="h-full w-full">
                 <div className="min-h-full w-full flex flex-col items-center py-8 px-4">
-                  
                   <div 
-                    className="shadow-2xl bg-white shrink-0"
+                    className="shadow-2xl bg-white shrink-0 origin-top" // origin-top важен!
                     style={{
                       width: '210mm',
                       minHeight: '297mm',
-                      zoom: isMobile 
-                        ? '0.4' 
-                        : 'min(1, calc((100cqw - 32px) / 794))',
+                      transform: `scale(${scale})`,
+                      // Чтобы пустые поля не оставались после уменьшения:
+                      marginBottom: `calc(297mm * ${scale - 1})`, 
+                      marginRight: scale < 1 ? `calc(210mm * ${scale - 1})` : 0
                     }}
                   >
                     <DocumentPreview 
@@ -436,7 +462,6 @@ const handleDownload = async () => {
                       projectType={project.type}
                     />
                   </div>
-
                 </div>
               </ScrollArea>
             </div>
