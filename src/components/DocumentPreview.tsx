@@ -32,7 +32,7 @@ export default function DocumentPreview({ blocks, projectType, onSetFullPage, is
   const [zoomLevel, setZoomLevel] = useState(1);
 
   const fullPageToggle = () => {
-    onSetFullPage(!isFullPage);
+    // onSetFullPage(!isFullPage);
   };
 
   useEffect(() => {

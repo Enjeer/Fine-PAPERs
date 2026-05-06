@@ -306,7 +306,7 @@ const handleDownload = async () => {
   const [isFullPage, setIsFullPage] = useState(false);
 
   const handleSetFullPage = (next: boolean) => {
-    setIsFullPage((prev) => (prev === next ? prev : next));
+    // setIsFullPage((prev) => (prev === next ? prev : next));
   };
 
 
@@ -353,7 +353,7 @@ const handleDownload = async () => {
 
       {/* Editor + Preview */}
         <ResizablePanelGroup direction={isMobile? "vertical" : "horizontal"} className="flex-1 h-full min-h-0 overflow-hidden">
-          <ResizablePanel defaultSize={50} minSize={isFullPage ? 0 : 30} className="h-full min-h-0 overflow-hidden">
+          <ResizablePanel defaultSize={50} minSize={30} className="h-full min-h-0 overflow-hidden">
             <div className="h-full overflow-y-auto bg-background">
               <div className="max-w-3xl mx-auto py-8 px-4 space-y-3">
                 {/* Title page block — always first, not draggable */}
@@ -424,9 +424,9 @@ const handleDownload = async () => {
             </div>
           </ResizablePanel>
 
-          {!isFullPage && (
+          {/* {!isFullPage && ( */}
             <ResizableHandle withHandle />
-          )}
+          {/* )} */}
   
           <ResizablePanel defaultSize={50} minSize={25} className="h-full min-h-0 overflow-hidden">
             <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type} isFullPage={isFullPage} onSetFullPage={handleSetFullPage}/>
