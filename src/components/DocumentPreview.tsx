@@ -6,8 +6,6 @@ interface DocumentPreviewProps {
   blocks: Block[];
   projectName: string;
   projectType: string;
-  isFullPage,
-  onSetFullPage: (next: boolean) => void;
 }
 
 const PAGE_WIDTH_MM = 210;
@@ -23,17 +21,13 @@ const FONT_STYLE = {
   height: `${PAGE_HEIGHT_MM}mm`
 };
 
-export default function DocumentPreview({ blocks, projectType, onSetFullPage, isFullPage }: DocumentPreviewProps) {
+export default function DocumentPreview({ blocks, projectType}: DocumentPreviewProps) {
   const [paginatedPages, setPaginatedPages] = useState<Block[][]>([]);
   const [tocEntries, setTocEntries] = useState<{text: string; level: number; page: number}[]>([]);
   const [isCalculating, setIsCalculating] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
-
-  const fullPageToggle = () => {
-    // onSetFullPage(!isFullPage);
-  };
 
   useEffect(() => {
     const updateZoom = () => {
@@ -211,7 +205,7 @@ export default function DocumentPreview({ blocks, projectType, onSetFullPage, is
       />
 
       <div className="h-10 px-4 py-2 border-b border-border bg-card shrink-0 flex justify-between items-center z-10">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-primary" role="button" onClick={fullPageToggle}>Предпросмотр</span>
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-primary" role="button">Предпросмотр</span>
         {isCalculating && <span className="text-[10px] animate-pulse text-primary font-medium">Оптимизация страниц...</span>}
       </div>
 
