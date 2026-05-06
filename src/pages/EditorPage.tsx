@@ -582,7 +582,8 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
             if (isExpanded) {
               textarea.style.height = `${textarea.scrollHeight}px`;
             } else {
-              textarea.style.height = "6rem"; 
+              textarea.style.height = "6rem";
+              textarea.scrollIntoView; 
             }
             setNeedsCollapse(textarea.scrollHeight > 100);
           }
@@ -603,7 +604,7 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
                 style={{ minHeight: isExpanded ? "100px" : "6rem" }}
               />
               {!isExpanded && needsCollapse && (
-                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
               )}
             </div>
 
