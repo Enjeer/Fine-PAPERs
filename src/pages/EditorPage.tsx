@@ -21,6 +21,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import {
   ArrowLeft, Plus, Trash2, GripVertical, Type, Heading, Image, Table, FileText, Save,
   ChevronUp, ChevronDown, Lock,
@@ -546,12 +547,17 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
 
     case "text":
       return (
-        <Textarea
-          value={block.content.text}
-          onChange={e => onChange({ ...block.content, text: e.target.value })}
-          placeholder="Введите текст..."
-          className="min-h-[100px] border-none bg-transparent px-0 focus-visible:ring-0 resize-none leading-relaxed indent-8"
-        />
+        <Collapsible>
+          <CollapsibleTrigger>Свернуть / Развернуть</CollapsibleTrigger>
+          <CollapsibleContent>
+            <Textarea
+              value={block.content.text}
+              onChange={e => onChange({ ...block.content, text: e.target.value })}
+              placeholder="Введите текст..."
+              className="min-h-[100px] border-none bg-transparent px-0 focus-visible:ring-0 resize-none leading-relaxed indent-8"
+            />
+          </CollapsibleContent>
+        </Collapsible>
       );
 
     case "title-page":
