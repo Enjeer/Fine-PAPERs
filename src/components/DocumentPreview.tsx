@@ -211,7 +211,7 @@ export default function DocumentPreview({ blocks, projectType, onSetFullPage, is
       />
 
       <div className="h-10 px-4 py-2 border-b border-border bg-card shrink-0 flex justify-between items-center z-10">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:bg-primary" role="button" onClick={fullPageToggle}>Предпросмотр</span>
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-primary" role="button" onClick={fullPageToggle}>Предпросмотр</span>
         {isCalculating && <span className="text-[10px] animate-pulse text-primary font-medium">Оптимизация страниц...</span>}
       </div>
 
