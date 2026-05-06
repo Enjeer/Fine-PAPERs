@@ -543,9 +543,6 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
 
 function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c: Record<string, any>) => void, isSaved: boolean}) {
 
-  const [isTextMinified, setIsTextMinified] = useState(true)
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   switch (block.type) {
     case "heading":
       return (
@@ -572,31 +569,59 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
         </div>
       );
 
-    case "text":
-      return (
-        <div>
-          <Textarea
-            ref={textareaRef}
-            value={block.content.text}
-            onChange={e => {onChange({ ...block.content, text: e.target.value }); const textarea = textareaRef.current; textarea.style.height = `${textarea.scrollHeight}px`;}}
-            placeholder="Введите текст..."
-            className={cn(
-              " field-sizing-content border-none bg-transparent px-0 focus-visible:ring-0 leading-relaxed indent-8",
-              isTextMinified
-              ? "min-h-[100px]" 
-              : "h-fit"
+      case "text": {
+        const textareaRef = useRef<HTMLTextAreaElement>(null);
+        const [isExpanded, setIsExpanded] = useState(false);
+        const [needsCollapse, setNeedsCollapse] = useState(false);
+
+        useEffect(() => {
+          const textarea = textareaRef.current;
+          if (textarea) {
+            textarea.style.height = "auto";
+            
+            if (isExpanded) {
+              textarea.style.height = `${textarea.scrollHeight}px`;
+            } else {
+              textarea.style.height = "6rem"; 
+            }
+            setNeedsCollapse(textarea.scrollHeight > 100);
+          }
+        }, [block.content.text, isExpanded]);
+
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="relative">
+              <Textarea
+                ref={textareaRef}
+                value={block.content.text}
+                onChange={(e) => onChange({ ...block.content, text: e.target.value })}
+                placeholder="Введите текст..."
+                className={cn(
+                  "w-full border-none bg-transparent resize-none px-0 focus-visible:ring-0 leading-relaxed indent-8 transition-[height] duration-200 ease-in-out overflow-hidden",
+                  !isExpanded && needsCollapse && "mask-linear-gradient"
+                )}
+                style={{ minHeight: isExpanded ? "100px" : "6rem" }}
+              />
+              {!isExpanded && needsCollapse && (
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+              )}
+            </div>
+
+            {needsCollapse && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground hover:text-primary transition-colors self-start mt-1 flex items-center gap-1"
+              >
+                {isExpanded ? (
+                  <>Свернуть</>
+                ) : (
+                  <>Развернуть</>
+                )}
+              </button>
             )}
-          />
-          <button onClick={() => setIsTextMinified(isTextMinified? false : true)}
-            className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
-            {isTextMinified ? (
-              <ChevronDown className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronUp className="w-3.5 h-3.5" />
-            )}
-          </button>
-        </div>
-      );
+          </div>
+        );
+      }
 
     case "title-page":
       const unis = [
