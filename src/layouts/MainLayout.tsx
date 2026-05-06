@@ -15,7 +15,7 @@ export default function MainLayout() {
         isCollapsed ? "md:ml-20" : "md:ml-80", 
         "ml-0" 
       )}
-    >ы
+    >
       <div className="relative flex-1 min-h-0 w-full">
         <Outlet />
       </div>
