@@ -503,7 +503,7 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
                 {block.type === "text" && (
                   <CollapsibleTrigger>
                     <button onClick={() => setIsCollapsed(isCollapsed? false : true)}
-                      className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
                       {isCollapsed ? (
                         <ChevronDown className="w-3.5 h-3.5" />
                       ) : (
@@ -574,7 +574,7 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
             value={block.content.text}
             onChange={e => onChange({ ...block.content, text: e.target.value })}
             placeholder="Введите текст..."
-            className="min-h-[100px] h-fit border-none bg-transparent px-0 focus-visible:ring-0 resize-none leading-relaxed indent-8"
+            className="min-h-[100px] field-sizing-content border-none bg-transparent px-0 focus-visible:ring-0 resize-none leading-relaxed indent-8"
           />
       );
 
