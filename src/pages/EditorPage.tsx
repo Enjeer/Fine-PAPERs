@@ -196,7 +196,7 @@ export default function EditorPage() {
           const res = await api.post('upload_image/', formData);
           return {
             ...block,
-            content: { ...block.content, url: res.data.url, file: undefined }
+            content: { ...block.content, url: res.data.url, file: undefined, path: res.data.path}
           };
         } catch (e) {
           return block;
@@ -542,6 +542,10 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
 /* ---- Block Editor ---- */
 
 function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c: Record<string, any>) => void, isSaved: boolean}) {
+
+  const [isTextMinified, setIsTextMinified] = useState(true)
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   switch (block.type) {
     case "heading":
       return (
@@ -570,12 +574,28 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
 
     case "text":
       return (
+        <div>
           <Textarea
+            ref={textareaRef}
             value={block.content.text}
-            onChange={e => onChange({ ...block.content, text: e.target.value })}
+            onChange={e => {onChange({ ...block.content, text: e.target.value }); const textarea = textareaRef.current; textarea.style.height = `${textarea.scrollHeight}px`;}}
             placeholder="Введите текст..."
-            className="min-h-[100px] field-sizing-content border-none bg-transparent px-0 focus-visible:ring-0 leading-relaxed indent-8"
+            className={cn(
+              " field-sizing-content border-none bg-transparent px-0 focus-visible:ring-0 leading-relaxed indent-8",
+              isTextMinified
+              ? "min-h-[100px]" 
+              : "h-fit"
+            )}
           />
+          <button onClick={() => setIsTextMinified(isTextMinified? false : true)}
+            className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
+            {isTextMinified ? (
+              <ChevronDown className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronUp className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
       );
 
     case "title-page":

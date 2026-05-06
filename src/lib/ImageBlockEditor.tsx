@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 interface ImageBlockEditorProps {
     content: {
         url?: string;
+        path?: string;
         caption?: string;
         source?: string;
         file?: File;
