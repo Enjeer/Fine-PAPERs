@@ -574,7 +574,7 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
             value={block.content.text}
             onChange={e => onChange({ ...block.content, text: e.target.value })}
             placeholder="Введите текст..."
-            className="min-h-[100px] field-sizing-content border-none bg-transparent px-0 focus-visible:ring-0 resize-none leading-relaxed indent-8"
+            className="min-h-[100px] field-sizing-content border-none bg-transparent px-0 focus-visible:ring-0 leading-relaxed indent-8"
           />
       );
 
