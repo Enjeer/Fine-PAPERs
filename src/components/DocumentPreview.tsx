@@ -6,8 +6,8 @@ interface DocumentPreviewProps {
   blocks: Block[];
   projectName: string;
   projectType: string;
-  onAction: Function;
-  isFullPage: boolean;
+  isFullPage,
+  onSetFullPage: (next: boolean) => void;
 }
 
 const PAGE_WIDTH_MM = 210;
@@ -23,7 +23,7 @@ const FONT_STYLE = {
   height: `${PAGE_HEIGHT_MM}mm`
 };
 
-export default function DocumentPreview({ blocks, projectType, onAction, isFullPage }: DocumentPreviewProps) {
+export default function DocumentPreview({ blocks, projectType, onSetFullPage, isFullPage }: DocumentPreviewProps) {
   const [paginatedPages, setPaginatedPages] = useState<Block[][]>([]);
   const [tocEntries, setTocEntries] = useState<{text: string; level: number; page: number}[]>([]);
   const [isCalculating, setIsCalculating] = useState(true);
@@ -32,14 +32,8 @@ export default function DocumentPreview({ blocks, projectType, onAction, isFullP
   const [zoomLevel, setZoomLevel] = useState(1);
 
   const fullPageToggle = () => {
-    try {
-      const res = isFullPage ? false : true;
-      onAction(res);
-    } catch (err) {
-      console.log("Error during changing view state: ", err);
-      throw err;
-    }
-  }
+    onSetFullPage(!isFullPage);
+  };
 
   useEffect(() => {
     const updateZoom = () => {

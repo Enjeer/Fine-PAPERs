@@ -303,13 +303,12 @@ const handleDownload = async () => {
 
   const enrichedBlocks = getBlocksWithMetadata(sortableBlocks);
 
-  // Full page view
+    const [isFullPage, setIsFullPage] = useState(false);
 
-  const [isFullPage, setIsFullPage] = useState(false);
+  const handleSetFullPage = (next: boolean) => {
+    setIsFullPage((prev) => (prev === next ? prev : next));
+  };
 
-  const handleViewState = (res: boolean) => {
-    setIsFullPage(res);
-  }
 
   return (
     <div className="h-full flex flex-col">
@@ -430,7 +429,7 @@ const handleDownload = async () => {
           )}
   
           <ResizablePanel defaultSize={isFullPage? 100 : 50} minSize={isFullPage? 0 : 25} className="h-full min-h-0 overflow-hidden">
-            <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type} onAction={handleViewState} isFullPage/>
+            <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type} isFullPage={isFullPage} onSetFullPage={handleSetFullPage}/>
           </ResizablePanel>
         </ResizablePanelGroup>
     </div>
