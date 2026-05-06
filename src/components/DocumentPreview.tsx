@@ -15,8 +15,9 @@ const PADDING_BOTTOM_MM = 25;
 const CONTENT_MAX_HEIGHT_PX = (PAGE_HEIGHT_MM - PADDING_TOP_MM - PADDING_BOTTOM_MM) * 3.78;
 
 const PAGE_STYLE = "bg-white text-black shadow-lg w-[210mm] px-[25mm] py-[20mm] text-[12pt] leading-[1.5] relative overflow-hidden flex flex-col shrink-0 mb-8";
-const FONT_STYLE = { 
-  fontFamily: "'Times New Roman' serif",
+const FONT_STYLE = {
+  fontFamily: "'Times New Roman', Times, serif",
+  fontWeight: 400 as const,
   height: `${PAGE_HEIGHT_MM}mm`
 };
 
