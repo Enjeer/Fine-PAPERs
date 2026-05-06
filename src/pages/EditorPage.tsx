@@ -441,6 +441,9 @@ interface SortableBlockCardProps {
 }
 
 function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdate, isSaved }: SortableBlockCardProps) {
+
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
   const {
     attributes,
     listeners,
@@ -477,41 +480,62 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
     chapteramber: "bg-chapteramber/20",
   };
 
+
+
   return (
     <div ref={setNodeRef} style={style} className="relative overflow-hidden">
-      <Card className="group border-border hover:border-primary/20 transition-colors overflow-hidden">
-        <CardContent className="p-0">
-          <div className={cn(
-              "flex items-center gap-1 px-3 py-2 border-b border-border transition-colors",
-              block.chapterColor &&
-                (block.isChapterRoot
-                  ? chapterBgMap[block.chapterColor]
-                  : chapterBgLightMap[block.chapterColor])
-            )}>
-            <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground/50 hover:text-muted-foreground">
-              <GripVertical className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex-1">
-              {label}
-            </span>
-            <button onClick={() => onMove(-1)} disabled={index === 0}
-              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
-              <ChevronUp className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={() => onMove(1)} disabled={index === totalCount - 1}
-              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={onRemove}
-              className="p-1 text-muted-foreground hover:text-destructive transition-colors">
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div className="p-4">
-            <BlockEditor block={block} onChange={onUpdate} isSaved={isSaved} />
-          </div>
-        </CardContent>
-      </Card>
+
+      <Collapsible open={block.type === "text" ? !isCollapsed : true}>
+        <Card className="group border-border hover:border-primary/20 transition-colors overflow-hidden">
+          <CardContent className="p-0">
+            <div className={cn(
+                "flex items-center gap-1 px-3 py-2 border-b border-border transition-colors",
+                block.chapterColor &&
+                  (block.isChapterRoot
+                    ? chapterBgMap[block.chapterColor]
+                    : chapterBgLightMap[block.chapterColor])
+              )}>
+              <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground/50 hover:text-muted-foreground">
+                <GripVertical className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex-1">
+                {label}
+              </span>
+
+              {block.type === "text" && (
+                <CollapsibleTrigger>
+                  <button onClick={() => setIsCollapsed(isCollapsed? false : true)}
+                    className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
+                    {isCollapsed ? (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+              )}
+
+              <button onClick={() => onMove(-1)} disabled={index === 0}
+                className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => onMove(1)} disabled={index === totalCount - 1}
+                className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={onRemove}
+                className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <CollapsibleContent>
+              <div className="p-4">
+                <BlockEditor block={block} onChange={onUpdate} isSaved={isSaved} />
+              </div>
+            </CollapsibleContent>
+          </CardContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 }
@@ -547,17 +571,12 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
 
     case "text":
       return (
-        <Collapsible>
-          <CollapsibleTrigger>Свернуть / Развернуть</CollapsibleTrigger>
-          <CollapsibleContent>
-            <Textarea
-              value={block.content.text}
-              onChange={e => onChange({ ...block.content, text: e.target.value })}
-              placeholder="Введите текст..."
-              className="min-h-[100px] border-none bg-transparent px-0 focus-visible:ring-0 resize-none leading-relaxed indent-8"
-            />
-          </CollapsibleContent>
-        </Collapsible>
+          <Textarea
+            value={block.content.text}
+            onChange={e => onChange({ ...block.content, text: e.target.value })}
+            placeholder="Введите текст..."
+            className="min-h-[100px] h-fit border-none bg-transparent px-0 focus-visible:ring-0 resize-none leading-relaxed indent-8"
+          />
       );
 
     case "title-page":
