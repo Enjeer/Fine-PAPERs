@@ -500,20 +500,19 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
               </button>
               <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex-1">
                 {label}
+                {block.type === "text" && (
+                  <CollapsibleTrigger>
+                    <button onClick={() => setIsCollapsed(isCollapsed? false : true)}
+                      className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
+                      {isCollapsed ? (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                )}
               </span>
-
-              {block.type === "text" && (
-                <CollapsibleTrigger>
-                  <button onClick={() => setIsCollapsed(isCollapsed? false : true)}
-                    className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
-                    {isCollapsed ? (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </CollapsibleTrigger>
-              )}
 
               <button onClick={() => onMove(-1)} disabled={index === 0}
                 className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">

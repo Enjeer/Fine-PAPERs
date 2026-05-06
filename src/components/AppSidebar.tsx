@@ -132,6 +132,9 @@ export default function AppSidebar({ isCollapsed, setIsCollapsed }: AppSidebarPr
           })}
         </nav>
 
+        
+        {/* Bottom Section (User & Theme) */}
+
         <div className={cn(
           "flex items-center gap-3 mb-2", 
           isCollapsed ? "justify-center" : "px-2"
@@ -147,7 +150,6 @@ export default function AppSidebar({ isCollapsed, setIsCollapsed }: AppSidebarPr
           )}
         </div>
 
-        {/* Bottom Section (User & Theme) */}
         <div className={cn(
           "flex items-center gap-2.5 py-2 m-2 rounded-xl bg-sidebar-accent/40 border border-sidebar-border/50 transition-all",
           isCollapsed ? "justify-center px-1" : "px-3"

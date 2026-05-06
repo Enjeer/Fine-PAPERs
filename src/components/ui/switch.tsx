@@ -27,7 +27,7 @@ const Switch = React.forwardRef<
         {theme === "dark" ? (
           <Moon className="h-3 w-3 text-primary fill-primary/20" />
         ) : (
-          <Sun className="h-3 w-3 text-amber-500 fill-amber-500/20" />
+          <Sun className="h-3 w-3 text-white fill-white/20" />
         )}
       </SwitchPrimitives.Thumb>
     </SwitchPrimitives.Root>
