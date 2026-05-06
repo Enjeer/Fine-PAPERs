@@ -442,8 +442,6 @@ interface SortableBlockCardProps {
 
 function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdate, isSaved }: SortableBlockCardProps) {
 
-  const [isCollapsed, setIsCollapsed] = useState(true);
-
   const {
     attributes,
     listeners,
@@ -485,7 +483,6 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
   return (
     <div ref={setNodeRef} style={style} className="relative overflow-hidden">
 
-      <Collapsible open={block.type === "text" ? !isCollapsed : true}>
         <Card className="group border-border hover:border-primary/20 transition-colors overflow-hidden">
           <CardContent className="p-0">
             <div className={cn(
@@ -500,25 +497,30 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
               </button>
               <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex-1">
                 {label}
-                {block.type === "text" && (
-                  <CollapsibleTrigger>
-                    <button onClick={() => setIsCollapsed(isCollapsed? false : true)}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
-                      {isCollapsed ? (
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      ) : (
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </CollapsibleTrigger>
-                )}
               </span>
 
-              <button onClick={(e) => {onMove(-1); e.currentTarget.scrollIntoView()}} disabled={index === 0}
+              <button onClick={
+                (e) => {
+                  onMove(-1); 
+                  e.currentTarget.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'nearest' 
+                  })
+                }
+                } disabled={index === 0}
                 className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
                 <ChevronUp className="w-3.5 h-3.5" />
               </button>
-              <button onClick={(e) => {onMove(1); e.currentTarget.scrollIntoView()}} disabled={index === totalCount - 1}
+              <button onClick={(e) => {
+                onMove(1); 
+                e.currentTarget.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'nearest' 
+                  })
+                }
+                } disabled={index === totalCount - 1}
                 className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
                 <ChevronDown className="w-3.5 h-3.5" />
               </button>
@@ -527,14 +529,11 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
-            <CollapsibleContent>
-              <div className="p-4">
-                <BlockEditor block={block} onChange={onUpdate} isSaved={isSaved} />
-              </div>
-            </CollapsibleContent>
+            <div className="p-4">
+              <BlockEditor block={block} onChange={onUpdate} isSaved={isSaved} />
+            </div>
           </CardContent>
         </Card>
-      </Collapsible>
     </div>
   );
 }
@@ -583,7 +582,11 @@ function BlockEditor({ block, onChange, isSaved }: { block: Block; onChange: (c:
               textarea.style.height = `${textarea.scrollHeight}px`;
             } else {
               textarea.style.height = "6rem";
-              textarea.scrollIntoView(); 
+              textarea.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'nearest' 
+                  }); 
             }
             setNeedsCollapse(textarea.scrollHeight > 100);
           }
