@@ -21,7 +21,6 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import {
   ArrowLeft, Plus, Trash2, GripVertical, Type, Heading, Image, Table, FileText, Save,
   ChevronUp, ChevronDown, Lock,
@@ -304,6 +303,14 @@ const handleDownload = async () => {
 
   const enrichedBlocks = getBlocksWithMetadata(sortableBlocks);
 
+  // Full page view
+
+  const [isFullPage, setIsFullPage] = useState(false);
+
+  const handleViewState = (res: boolean) => {
+    setIsFullPage(res);
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
@@ -347,7 +354,7 @@ const handleDownload = async () => {
 
       {/* Editor + Preview */}
         <ResizablePanelGroup direction={isMobile? "vertical" : "horizontal"} className="flex-1 h-full min-h-0 overflow-hidden">
-          <ResizablePanel defaultSize={50} minSize={30} className="h-full min-h-0 overflow-hidden">
+          <ResizablePanel defaultSize={isFullPage? 0 : 50} minSize={isFullPage? 0 : 30} className="h-full min-h-0 overflow-hidden">
             <div className="h-full overflow-y-auto bg-background">
               <div className="max-w-3xl mx-auto py-8 px-4 space-y-3">
                 {/* Title page block — always first, not draggable */}
@@ -418,10 +425,12 @@ const handleDownload = async () => {
             </div>
           </ResizablePanel>
 
-          <ResizableHandle withHandle />
+          {!isFullPage && (
+            <ResizableHandle withHandle />
+          )}
   
-          <ResizablePanel defaultSize={50} minSize={25} className="h-full min-h-0 overflow-hidden">
-            <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type}/>
+          <ResizablePanel defaultSize={isFullPage? 100 : 50} minSize={isFullPage? 0 : 25} className="h-full min-h-0 overflow-hidden">
+            <DocumentPreview blocks={blocks} projectName={projectName} projectType={project.type} onAction={handleViewState} isFullPage/>
           </ResizablePanel>
         </ResizablePanelGroup>
     </div>
@@ -500,26 +509,27 @@ function SortableBlockCard({ block, index, totalCount, onMove, onRemove, onUpdat
               </span>
 
               <button onClick={
-                (e) => {
-                  onMove(-1); 
-                  e.currentTarget.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center',
-                    inline: 'nearest' 
-                  })
-                }
+                  (e) => {
+                    onMove(-1); 
+                    e.currentTarget.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'center',
+                      inline: 'nearest' 
+                    })
+                  }
                 } disabled={index === 0}
                 className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
                 <ChevronUp className="w-3.5 h-3.5" />
               </button>
-              <button onClick={(e) => {
-                onMove(1); 
-                e.currentTarget.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center',
-                    inline: 'nearest' 
-                  })
-                }
+              <button onClick={
+                  (e) => {
+                    onMove(1); 
+                    e.currentTarget.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'center',
+                      inline: 'nearest' 
+                    })
+                  }
                 } disabled={index === totalCount - 1}
                 className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
                 <ChevronDown className="w-3.5 h-3.5" />
