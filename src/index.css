@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: 'JetBrains Mono';
-  src: url('./assets/fonts/JetBrainsMono.ttf') format('truetype');
+  font-family: "JetBrains Mono";
+  src: url("./assets/fonts/JetBrainsMono.ttf") format("truetype");
   font-weight: 100 800;
   font-display: swap;
 }
@@ -47,12 +47,17 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --font-display: 'JetBrains Mono', monospace;
-    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: "JetBrains Mono", monospace;
+    --font-body: "Inter", system-ui, -apple-system, sans-serif;
     --shadow-sm: 0 1px 2px 0 hsl(220 25% 10% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(220 25% 10% / 0.07), 0 2px 4px -2px hsl(220 25% 10% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(220 25% 10% / 0.08), 0 4px 6px -4px hsl(220 25% 10% / 0.04);
-    --shadow-card: 0 1px 3px hsl(220 25% 10% / 0.06), 0 1px 2px hsl(220 25% 10% / 0.04);
+    --shadow-md:
+      0 4px 6px -1px hsl(220 25% 10% / 0.07),
+      0 2px 4px -2px hsl(220 25% 10% / 0.05);
+    --shadow-lg:
+      0 10px 15px -3px hsl(220 25% 10% / 0.08),
+      0 4px 6px -4px hsl(220 25% 10% / 0.04);
+    --shadow-card:
+      0 1px 3px hsl(220 25% 10% / 0.06), 0 1px 2px hsl(220 25% 10% / 0.04);
   }
 
   .dark {
@@ -67,7 +72,7 @@
     --secondary: 220 15% 18%;
     --secondary-foreground: 220 10% 90%;
     --muted: 220 15% 16%;
-    --muted-foreground: 220 9% 73%;
+    --muted-foreground: 220 10% 93%;
     --accent: 250 60% 65%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62% 30%;
@@ -125,7 +130,10 @@
     @apply leading-relaxed mb-4;
   }
 
-  input, button, select, textarea {
+  input,
+  button,
+  select,
+  textarea {
     @apply text-base md:text-sm transition-colors;
   }
 }
