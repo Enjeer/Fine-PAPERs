@@ -1,12 +1,20 @@
 import React, { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNavigate } from "react-router-dom";
+import { useGoogleAuth } from "@/lib/useGoogleAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { FileText, Loader2 } from "lucide-react";
-import Icon from '@/assets/img/Base-logo-blue.svg';
+import Icon from "@/assets/img/Base-logo-blue.svg";
+import { FcGoogle } from "react-icons/fc";
 
 export default function AuthPage() {
   const { login, signUp } = useAuth();
@@ -18,6 +26,8 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const { signInWithGoogle } = useGoogleAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,15 +57,17 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md animate-fade-in">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary">
+        <div className="flex items-start justify-center gap-3 mb-8">
+          <div className="flex items-center justify-center md:w-14 md:h-14 sm:mt-1 md:mt-1.5 w-12 h-12 rounded-xl bg-primary">
             <img src={Icon} alt="" />
           </div>
           <div>
             <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">
               Fine PAPERs
             </h1>
-            <p className="text-sm text-muted-foreground">Конструктор учебных работ</p>
+            <p className="text-sm text-muted-foreground">
+              Конструктор учебных работ
+            </p>
           </div>
         </div>
 
@@ -65,7 +77,9 @@ export default function AuthPage() {
               {isSignUp ? "Регистрация" : "Вход"}
             </CardTitle>
             <CardDescription>
-              {isSignUp ? "Создайте аккаунт для начала работы" : "Войдите в свой аккаунт"}
+              {isSignUp
+                ? "Создайте аккаунт для начала работы"
+                : "Войдите в свой аккаунт"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -73,21 +87,50 @@ export default function AuthPage() {
               {isSignUp && (
                 <div className="space-y-2">
                   <Label htmlFor="name">Имя пользователя</Label>
-                  <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Ваш логин" required />
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ваш логин"
+                    required
+                  />
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email{isSignUp ? '' : ' или логин'}</Label>
-                <Input id="email" type={`${isSignUp? 'email': 'text'}`} value={email} onChange={e => setEmail(e.target.value)} placeholder='email@example.com' required />
+                <Label htmlFor="email">
+                  Email{isSignUp ? "" : " или логин"}
+                </Label>
+                <Input
+                  id="email"
+                  type={`${isSignUp ? "email" : "text"}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Пароль</Label>
-                <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
               </div>
               {isSignUp && (
                 <div className="space-y-2">
                   <Label htmlFor="confirm">Подтвердите пароль</Label>
-                  <Input id="confirm" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required />
+                  <Input
+                    id="confirm"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
                 </div>
               )}
 
@@ -100,12 +143,28 @@ export default function AuthPage() {
             </form>
 
             <div className="mt-4 text-center">
+              <Button
+                variant="secondary"
+                type="button"
+                className="flex w-full justify-center gap-3"
+                onClick={() => {
+                  signInWithGoogle();
+                }}
+              >
+                <FcGoogle className="w-8 h-8" />
+                Войти через Google
+              </Button>
               <button
                 type="button"
-                onClick={() => { setIsSignUp(!isSignUp); setError(""); }}
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError("");
+                }}
                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
               >
-                {isSignUp ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться"}
+                {isSignUp
+                  ? "Уже есть аккаунт? Войти"
+                  : "Нет аккаунта? Зарегистрироваться"}
               </button>
             </div>
           </CardContent>

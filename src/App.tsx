@@ -12,15 +12,20 @@ import ProjectsPage from "@/pages/ProjectsPage";
 import EditorPage from "@/pages/EditorPage";
 import SupportPage from "./pages/SupportPage";
 import NotFound from "@/pages/NotFound";
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/react"
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ThemeProvider } from "./lib/themeProvider";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <div className="flex items-center justify-center h-screen text-muted-foreground">Загрузка...</div>;
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center h-screen text-muted-foreground">
+        Загрузка...
+      </div>
+    );
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
@@ -29,12 +34,31 @@ function AppRoutes() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
-      <Route path="/" element={<ProtectedRoute><ProjectsProvider><MainLayout /></ProjectsProvider></ProtectedRoute>}>
+      <Route
+        path="/auth"
+        element={user ? <Navigate to="/" replace /> : <AuthPage />}
+      />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <ProjectsProvider>
+              <MainLayout />
+            </ProjectsProvider>
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:projectId" element={<EditorPage />} />
-        <Route path="support" element={<TicketsProvider><SupportPage /></TicketsProvider>}/>
+        <Route
+          path="support"
+          element={
+            <TicketsProvider>
+              <SupportPage />
+            </TicketsProvider>
+          }
+        />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
