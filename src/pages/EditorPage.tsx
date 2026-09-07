@@ -1,4 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type TouchEvent,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProjects, type Block } from "@/lib/projects-context";
 import ImageBlockEditor from "@/lib/ImageBlockEditor";
@@ -159,9 +165,79 @@ export default function EditorPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
-  const [showMobilePreviewHint, setShowMobilePreviewHint] = useState(true);
+  const [mobilePreviewProgress, setMobilePreviewProgress] = useState(0);
+  const [isMobilePreviewDragging, setIsMobilePreviewDragging] = useState(false);
+  const mobileSwipeRef = useRef({ x: 0, y: 0, active: false });
   const moveTargetRef = useRef<string | null>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
+
+  const clampPreviewProgress = (value: number) =>
+    Math.max(0, Math.min(1, value));
+
+  const setMobilePreviewOpen = (open: boolean) => {
+    setIsMobilePreviewOpen(open);
+    setMobilePreviewProgress(open ? 1 : 0);
+  };
+
+  const handleMobileSwipeStart = (e: TouchEvent) => {
+    if (!isMobile) return;
+    const touch = e.touches[0];
+    mobileSwipeRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      active: false,
+    };
+    setIsMobilePreviewDragging(false);
+  };
+
+  const handleMobileSwipeMove = (e: TouchEvent) => {
+    if (!isMobile || !mobileSwipeRef.current.x) return;
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - mobileSwipeRef.current.x;
+    const deltaY = touch.clientY - mobileSwipeRef.current.y;
+
+    if (!mobileSwipeRef.current.active) {
+      if (Math.abs(deltaX) < 8 || Math.abs(deltaX) < Math.abs(deltaY) * 1.15)
+        return;
+      mobileSwipeRef.current.active = true;
+      setIsMobilePreviewDragging(true);
+    }
+
+    const width = Math.max(window.innerWidth, 1);
+    const progress = isMobilePreviewOpen
+      ? clampPreviewProgress(1 - deltaX / width)
+      : clampPreviewProgress(deltaX < 0 ? -deltaX / width : 0);
+
+    setMobilePreviewProgress(progress);
+  };
+
+  const handleMobileSwipeEnd = () => {
+    if (!isMobile) return;
+
+    const wasDragging = mobileSwipeRef.current.active;
+    mobileSwipeRef.current.active = false;
+    setIsMobilePreviewDragging(false);
+
+    if (!wasDragging) return;
+
+    const shouldOpen = mobilePreviewProgress >= 0.34;
+    setMobilePreviewOpen(shouldOpen);
+  };
+
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const timer = window.setTimeout(() => {
+      toast({
+        title: "Предпросмотр",
+        description:
+          "Проведите влево, чтобы открыть предпросмотр. Вправо — чтобы закрыть.",
+      });
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -472,28 +548,11 @@ export default function EditorPage() {
         >
           <div
             ref={editorScrollRef}
-            className="h-full overflow-y-auto bg-background
-          [&::-webkit-scrollbar]:w-0"
-            onTouchStart={(e) => {
-              const touch = e.touches[0];
-              e.currentTarget.dataset.touchStartX = String(touch.clientX);
-              e.currentTarget.dataset.touchStartY = String(touch.clientY);
-            }}
-            onTouchEnd={(e) => {
-              if (!isMobile) return;
-
-              const container = e.currentTarget;
-              const startX = Number(container.dataset.touchStartX || 0);
-              const startY = Number(container.dataset.touchStartY || 0);
-              const touch = e.changedTouches[0];
-              const deltaX = touch.clientX - startX;
-              const deltaY = touch.clientY - startY;
-
-              if (deltaX > 70 && Math.abs(deltaX) > Math.abs(deltaY) * 1.25) {
-                setIsMobilePreviewOpen(true);
-                setShowMobilePreviewHint(false);
-              }
-            }}
+            className="h-full overflow-y-auto bg-background [&::-webkit-scrollbar]:w-0"
+            style={{ touchAction: "pan-y" }}
+            onTouchStart={handleMobileSwipeStart}
+            onTouchMove={handleMobileSwipeMove}
+            onTouchEnd={handleMobileSwipeEnd}
           >
             <div className="max-w-3xl mx-auto py-6 sm:py-8 px-3 sm:px-4 space-y-3 pb-24 sm:pb-8">
               {/* Title page block — always first, not draggable */}
@@ -610,23 +669,29 @@ export default function EditorPage() {
         {isMobile && (
           <div
             className={cn(
-              "absolute inset-0 z-40 bg-background transition-transform duration-300 ease-out",
-              isMobilePreviewOpen ? "translate-x-0" : "translate-x-full",
+              "absolute inset-0 z-40 bg-background",
+              !isMobilePreviewDragging &&
+                "transition-transform duration-300 ease-out",
+              mobilePreviewProgress === 0 && "pointer-events-none",
             )}
-            aria-hidden={!isMobilePreviewOpen}
+            style={{
+              transform: `translateX(${(1 - mobilePreviewProgress) * 100}%)`,
+              touchAction: "pan-y",
+            }}
+            aria-hidden={!isMobilePreviewOpen && mobilePreviewProgress === 0}
+            onTouchStart={handleMobileSwipeStart}
+            onTouchMove={handleMobileSwipeMove}
+            onTouchEnd={handleMobileSwipeEnd}
           >
             <div className="h-full flex flex-col">
-              <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 shrink-0">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Предпросмотр
-                </span>
+              <div className="flex items-center justify-end border-b border-border bg-card px-2 py-2 shrink-0">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   title="Закрыть предпросмотр"
                   aria-label="Закрыть предпросмотр"
-                  onClick={() => setIsMobilePreviewOpen(false)}
+                  onClick={() => setMobilePreviewOpen(false)}
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -650,8 +715,7 @@ export default function EditorPage() {
               variant="outline"
               className="h-11 flex-1 gap-2 text-xs"
               onClick={() => {
-                setIsMobilePreviewOpen(true);
-                setShowMobilePreviewHint(false);
+                setMobilePreviewOpen(true);
               }}
             >
               <Eye className="w-4 h-4" />
@@ -685,13 +749,6 @@ export default function EditorPage() {
                 <LoaderCircle className="w-4 h-4 animate-spin" />
               )}
             </Button>
-
-            {showMobilePreviewHint && !isMobilePreviewOpen && (
-              <div className="absolute bottom-full left-3 right-3 mb-2 rounded-xl border border-border bg-popover px-3 py-2 text-xs leading-relaxed text-popover-foreground shadow-lg">
-                Нажмите «Предпросмотр» или проведите пальцем вправо, чтобы
-                открыть предпросмотр.
-              </div>
-            )}
           </div>
         </nav>
       )}
@@ -810,15 +867,11 @@ function SortableBlockCard({
             </button>
             <button
               onClick={() => setIsCollapsed((value) => !value)}
-              className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-              title={isCollapsed ? "Развернуть блок" : "Свернуть блок"}
-              aria-label={isCollapsed ? "Развернуть блок" : "Свернуть блок"}
+              className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+              title={isCollapsed ? "Раскрыть блок" : "Скрыть блок"}
+              aria-label={isCollapsed ? "Раскрыть блок" : "Скрыть блок"}
             >
-              {isCollapsed ? (
-                <ChevronDown className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronUp className="w-3.5 h-3.5" />
-              )}
+              {isCollapsed ? "Раскрыть" : "Скрыть"}
             </button>
             <button
               onClick={onRemove}
