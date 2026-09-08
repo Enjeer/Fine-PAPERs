@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const client = window.google.accounts.oauth2.initCodeClient({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      client_id: import.meta.env.GOOGLE_CLIENT_ID,
       scope: "openid email profile",
       ux_mode: "popup",
       callback: async (response: any) => {
