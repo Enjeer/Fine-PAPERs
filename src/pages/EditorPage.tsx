@@ -332,42 +332,48 @@ export default function EditorPage() {
     saveBlocks(arrayMove(blocks, oldIndex, newIndex));
   };
 
+  const saveProjectChanges = useCallback(async () => {
+    if (!projectId) return;
+
+    const updatedBlocks = await Promise.all(
+      blocks.map(async (block) => {
+        const isLocalBlob =
+          block.type === "image" && block.content.url?.startsWith("blob:");
+        if (block.type === "image" && isLocalBlob && block.content.file) {
+          try {
+            const formData = new FormData();
+            formData.append("file", block.content.file);
+            const res = await api.post("upload_image/", formData);
+            return {
+              ...block,
+              content: {
+                ...block.content,
+                url: res.data.url,
+                file: undefined,
+                path: res.data.path,
+              },
+            };
+          } catch (e) {
+            console.error("Image upload failed during save", e);
+            return block;
+          }
+        }
+        return block;
+      }),
+    );
+
+    await updateProject(projectId, { name: projectName });
+    await updateBlocks(projectId, updatedBlocks);
+    setIsDirty(false);
+    setIsSaved(true);
+  }, [blocks, projectId, projectName, updateBlocks, updateProject]);
+
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
 
     try {
-      const updatedBlocks = await Promise.all(
-        blocks.map(async (block) => {
-          const isLocalBlob =
-            block.type === "image" && block.content.url?.startsWith("blob:");
-          if (block.type === "image" && isLocalBlob && block.content.file) {
-            try {
-              const formData = new FormData();
-              formData.append("file", block.content.file);
-              const res = await api.post("upload_image/", formData);
-              return {
-                ...block,
-                content: {
-                  ...block.content,
-                  url: res.data.url,
-                  file: undefined,
-                  path: res.data.path,
-                },
-              };
-            } catch (e) {
-              return block;
-            }
-          }
-          return block;
-        }),
-      );
-
-      if (projectId) {
-        await updateProject(projectId, { name: projectName });
-        await updateBlocks(projectId, updatedBlocks);
-      }
-
+      await saveProjectChanges();
       toast({ title: "Сохранено", description: "Проект успешно сохранён" });
     } catch (error) {
       console.error("Общая ошибка сохранения проекта:", error);
@@ -378,32 +384,23 @@ export default function EditorPage() {
       });
     } finally {
       setIsSaving(false);
-      setIsSaved(true);
     }
   };
 
   useEffect(() => {
-    if (!isDirty || isSaving) return;
+    if (!isDirty || isSaving || !projectId) return;
 
     const timer = setTimeout(async () => {
-      const hasPendingImages = blocks.some(
-        (b) => b.type === "image" && b.content.url?.startsWith("blob:"),
-      );
-
-      if (hasPendingImages) return;
-
       try {
-        await updateBlocks(projectId!, blocks);
-        setIsDirty(false);
+        await saveProjectChanges();
         toast({ title: "Автосохранение выполнено" });
-        console.log(isMobile);
       } catch (e) {
         console.error("Auto-save failed", e);
       }
     }, 1800);
 
     return () => clearTimeout(timer);
-  }, [blocks, isDirty, projectId, isSaving]);
+  }, [blocks, isDirty, isSaving, projectId, saveProjectChanges]);
 
   const handleDownload = async () => {
     if (isDownloading) return;

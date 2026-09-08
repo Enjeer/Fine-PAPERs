@@ -18,20 +18,21 @@ import { ThemeProvider } from "./lib/themeProvider";
 
 const queryClient = new QueryClient();
 
+function AuthFallbackPage() {
+  return <div className="h-screen w-screen bg-background" aria-live="polite" />;
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  if (isLoading)
-    return (
-      <div className="flex items-center justify-center h-screen text-muted-foreground">
-        Загрузка...
-      </div>
-    );
+  if (isLoading) return <AuthFallbackPage />;
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <AuthFallbackPage />;
   return (
     <Routes>
       <Route

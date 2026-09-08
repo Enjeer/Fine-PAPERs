@@ -146,6 +146,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    setIsLoading(true);
+    setUser(null);
+
     try {
       await api.post("logout/");
     } catch (error) {
@@ -153,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       clearAccessToken();
       localStorage.removeItem("ab_user");
-      setUser(null);
+      setIsLoading(false);
     }
   }, []);
 
