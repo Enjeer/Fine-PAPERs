@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { api } from "./axios";
 import { GOOGLE_CLIENT_ID } from "@/config";
+import { setAccessToken, clearAccessToken } from "./token-store";
 interface User {
   id: string;
   email: string;
@@ -25,22 +26,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const USER_KEY = "ab_user";
-const TOKEN_KEY = "access_token";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem(USER_KEY);
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
-        /* ignore */
-      }
-    }
-    setIsLoading(false);
+    api
+      .post("token/refresh/")
+      .then(({ data }) => {
+        setAccessToken(data.access);
+        return api.get("me/");
+      })
+      .then(({ data }) => setUser(data))
+      .catch(() => {
+        clearAccessToken();
+        setUser(null);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const login = useCallback(async (login: string, password: string) => {
@@ -54,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user_name: data.user_name || login,
       };
 
-      localStorage.setItem(TOKEN_KEY, data.access);
+      setAccessToken(data.access);
       localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
       setUser(userToSave);
     } catch (error: any) {
@@ -91,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user_name: data.user_name || user_name,
         };
 
-        localStorage.setItem(TOKEN_KEY, data.access);
+        setAccessToken(data.access);
         localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
         setUser(userToSave);
       } catch (error: any) {
@@ -127,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             user_name: data.user_name || "",
           };
 
-          localStorage.setItem(TOKEN_KEY, data.access);
+          setAccessToken(data.access);
           localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
           setUser(userToSave);
         } catch (error: any) {
@@ -148,8 +151,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Server logout failed:", error);
     } finally {
-      localStorage.removeItem(USER_KEY);
-      localStorage.removeItem(TOKEN_KEY);
+      clearAccessToken();
+      localStorage.removeItem("ab_user");
       setUser(null);
     }
   }, []);

@@ -53,9 +53,6 @@ const ProjectsContext = createContext<ProjectsContextType | null>(null);
 export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-
   const sanitizeProject = useCallback((p: any): Project => {
     if (!p) return p;
     return {
@@ -68,20 +65,17 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
 
   const getProjects = useCallback(async () => {
     try {
-      if (!token) return;
       const response = await api.get("projects/");
       const cleanProjects = response.data.map(sanitizeProject);
       setProjects(cleanProjects);
     } catch (error: any) {
       console.error("Failed to fetch projects", error);
     }
-  }, [token, sanitizeProject]);
+  }, [sanitizeProject]);
 
   useEffect(() => {
-    if (token) {
-      getProjects();
-    }
-  }, [getProjects, token]);
+    getProjects();
+  }, [getProjects]);
 
   const getProject = useCallback(
     (id: string) => projects.find((p) => p.id === id),
@@ -91,8 +85,6 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const createProject = useCallback(
     async (data: Omit<Project, "id" | "updatedAt" | "blocks">) => {
       try {
-        if (!token) return;
-
         const response = await api.post("projects/", data);
 
         const cleanProject = sanitizeProject(response.data);
