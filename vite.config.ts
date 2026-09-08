@@ -1,6 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -11,9 +14,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -28,25 +29,23 @@ export default defineConfig(({ mode }) => ({
     ],
   },
   worker: {
-    format: 'es',
+    format: "es",
     plugins: () => [react()],
   },
   optimizeDeps: {
-    include: [
-      '@react-pdf/renderer',
-      'react',
-      'react-dom',
-    ],
-    exclude: ['@react-pdf/renderer'],
+    include: ["@react-pdf/renderer", "react", "react-dom"],
+    exclude: ["@react-pdf/renderer"],
   },
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-pdf': ['@react-pdf/renderer'],
+        manualChunks(id) {
+          if (id.includes("@react-pdf/renderer")) {
+            return "react-pdf";
+          }
         },
       },
     },
-    target: 'es2020',
+    target: "es2020",
   },
 }));
