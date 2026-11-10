@@ -194,7 +194,7 @@ export default function DashboardPage() {
                 Создать
               </Button>
               <hr />
-              <Button className="w-full" disabled>
+              <Button className="w-full">
                 <Cross className="w-4 h-4 text-muted-foreground" />
                 Ассистент
               </Button>
