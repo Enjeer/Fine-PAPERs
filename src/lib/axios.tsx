@@ -34,13 +34,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshResponse = await axios.post(
-          `${API_BASE_URL}token/refresh/`,
-          {},
-          {
-            withCredentials: true,
-          },
-        );
+        const refreshResponse = await api.post("token/refresh/", {});
 
         const newAccess = refreshResponse.data.access;
 

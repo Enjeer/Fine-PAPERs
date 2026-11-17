@@ -1,184 +1,544 @@
-import { useState } from "react";
-import { useTickets, type Ticket } from "@/lib/tickets-context";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AccordionTrigger, AccordionItem, AccordionContent, Accordion} from "@radix-ui/react-accordion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Trash2, FolderOpen } from "lucide-react";
+import { useTickets, type TicketDetails } from "@/lib/tickets-context";
+import { getSupportCategoryName } from "@/lib/support-api";
+import { Download, FolderOpen, Paperclip, Plus, Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
-const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-    active: { label: "Активна", variant: "default" },
-    inProgress: { label: "В работе", variant: "destructive" },
-    done: { label: "Обработана", variant: "secondary" },
-    closed: { label: "Закрыта", variant: "outline" },
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
+> = {
+  new: { label: "Новое", variant: "default" },
+  in_progress: { label: "В работе", variant: "destructive" },
+  waiting_for_user: { label: "Ожидает вашего ответа", variant: "secondary" },
+  waiting_for_support: { label: "Ожидает поддержки", variant: "outline" },
+  resolved: { label: "Решено", variant: "secondary" },
+  closed: { label: "Закрыто", variant: "outline" },
 };
 
-const FILTERS = ["Все", "Активные", "В работе", "Обработанные", "Закрытые"] as const;
-const FILTER_MAP: Record<string, string | null> = {
-    "Все": null, "Активные": "active", "В работе": "inProgress", "Обработанные": "done", "Закрытые" : "closed"
+const FILTERS = [
+  "Все",
+  "Новые",
+  "В работе",
+  "Ожидают моего ответа",
+  "Ожидают поддержки",
+  "Решённые",
+  "Закрытые",
+] as const;
+
+const FILTER_MAP: Record<(typeof FILTERS)[number], string | null> = {
+  Все: null,
+  Новые: "new",
+  "В работе": "in_progress",
+  "Ожидают моего ответа": "waiting_for_user",
+  "Ожидают поддержки": "waiting_for_support",
+  "Решённые": "resolved",
+  Закрытые: "closed",
 };
+
+function getErrorMessage(error: unknown) {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const data = (error as { response?: { data?: { detail?: unknown } } }).response?.data;
+    if (typeof data?.detail === "string") return data.detail;
+  }
+  return error instanceof Error ? error.message : "Не удалось выполнить запрос.";
+}
+
+function dateLabel(value?: string | null) {
+  if (!value) return "Нет сообщений";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleString("ru-RU", {
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+}
+
+function newIdempotencyKey() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+}
 
 export default function SupportPage() {
-    const { tickets, createTicket, closeTicket } = useTickets();
-    const navigate = useNavigate();
-    const [filter, setFilter] = useState<string>("Все");
-    const [search, setSearch] = useState("");
-    const [createDialogOpen, setCreateDialogOpen] = useState(false);
-    const [closeTicketDialogOpen, setCloseTicketDialogOpen] = useState<string | null>(null);
-    const [newTheme, setNewTheme] = useState("");
-    const [newDesc, setNewDesc] = useState("");
+  const [searchParams] = useSearchParams();
+  const {
+    tickets,
+    categories,
+    categoriesLoading,
+    categoriesError,
+    isLoading,
+    error,
+    refreshTickets,
+    getTicketDetails,
+    createTicket,
+    sendMessage,
+    uploadAttachment,
+    downloadAttachment,
+    closeTicket,
+  } = useTickets();
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]>("Все");
+  const [search, setSearch] = useState("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(
+    searchParams.get("ticket"),
+  );
+  const [details, setDetails] = useState<TicketDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [newTheme, setNewTheme] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [reply, setReply] = useState("");
+  const [replyKey, setReplyKey] = useState(newIdempotencyKey);
+  const [actionError, setActionError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
 
-    const filtered = tickets.filter(p => {
-        const statusMatch = !FILTER_MAP[filter] || p.status === FILTER_MAP[filter];
-        const searchMatch = !search || p.name.toLowerCase().includes(search.toLowerCase());
+  useEffect(() => {
+    const linkedTicketId = searchParams.get("ticket");
+    if (linkedTicketId) setSelectedTicketId(linkedTicketId);
+  }, [searchParams]);
+
+  const filtered = useMemo(
+    () =>
+      tickets.filter((ticket) => {
+        const statusMatch = !FILTER_MAP[filter] || ticket.status === FILTER_MAP[filter];
+        const searchTerm = search.trim().toLowerCase();
+        const searchMatch =
+          !searchTerm ||
+          ticket.name.toLowerCase().includes(searchTerm) ||
+          ticket.id.toLowerCase().includes(searchTerm);
         return statusMatch && searchMatch;
-    });
+      }),
+    [filter, search, tickets],
+  );
 
-    const normalizeDate = (lastUpdated) => {
-        const convertedDate = new Date(lastUpdated);
-        const normalizedDate = convertedDate.toLocaleString('ru-RU', {
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-        })
-        return normalizedDate;
+  useEffect(() => {
+    if (!selectedTicketId) {
+      setDetails(null);
+      return;
     }
 
-    const handleCreate = async () => {
-        // if (!newName.trim()) return;
-        
-        // try {
-        // const p = await createProject({ 
-        //     name: newName, 
-        //     description: newDesc, 
-        //     type: newType, 
-        //     status: "active" 
-        // });
-        
-        // setCreateDialogOpen(false);
-        // setNewName(""); 
-        // setNewDesc("");
-        
-        // navigate(`/projects/${p.id}`);
-        // } catch (err) {
-        // alert("Не удалось создать проект");
-        // }
+    let active = true;
+    setDetailsLoading(true);
+    setActionError("");
+    getTicketDetails(selectedTicketId)
+      .then((ticket) => {
+        if (active) setDetails(ticket);
+      })
+      .catch((requestError: unknown) => {
+        if (active) setActionError(getErrorMessage(requestError));
+      })
+      .finally(() => {
+        if (active) setDetailsLoading(false);
+      });
+    return () => {
+      active = false;
     };
+  }, [getTicketDetails, selectedTicketId]);
 
-    const newTicket = () =>{
-        window.open('https://forms.clickup.com/90121612778/f/2kxunbfa-612/MB7T1KYME3OPWKZ9IW');
+  async function handleCreate() {
+    const title = newTheme.trim();
+    const description = newDesc.trim();
+    if (!title || !description || !newCategory || isSubmitting) return;
+
+    setActionError("");
+    setIsSubmitting(true);
+    try {
+      const created = await createTicket({
+        name: title,
+        description,
+        category: newCategory,
+      });
+      setCreateDialogOpen(false);
+      setNewTheme("");
+      setNewDesc("");
+      setNewCategory("");
+      setSelectedTicketId(created.id);
+    } catch (requestError: unknown) {
+      setActionError(getErrorMessage(requestError));
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    return (
-        <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-display font-bold text-foreground">Поддержка</h1>
-            {/* <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild> */}
-                <Button className="gap-2" onClick={newTicket}><Plus className="w-4 h-4"/> Оставить заявку</Button>
-            {/* </DialogTrigger>
-            <DialogContent>
-                <DialogHeader><DialogTitle className="font-display">Новая заявка</DialogTitle></DialogHeader>
-                <div className="space-y-4 mt-2">
-                <div className="space-y-2">
-                    <Label>Тема</Label>
-                    <Input value={newTheme} onChange={e => setNewTheme(e.target.value)} placeholder="Тема заявки" />
-                </div>
-                <div className="space-y-2">
-                    <Label>Описание</Label>
-                    <Textarea value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Подробно опишите проблему" />
-                </div>
-                <Button onClick={handleCreate} className="w-full">Создать</Button>
-                </div>
-            </DialogContent>
-            </Dialog> */}
+  }
+
+  async function handleReply() {
+    if (!details || !reply.trim() || isSubmitting) return;
+    setActionError("");
+    setIsSubmitting(true);
+    try {
+      await sendMessage(details.id, reply.trim(), replyKey);
+      const updated = await getTicketDetails(details.id);
+      setDetails(updated);
+      setReply("");
+      setReplyKey(newIdempotencyKey());
+    } catch (requestError: unknown) {
+      setActionError(getErrorMessage(requestError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!details || !file || isUploading) return;
+    setActionError("");
+    setIsUploading(true);
+    try {
+      await uploadAttachment(details.id, file);
+      setDetails(await getTicketDetails(details.id));
+    } catch (requestError: unknown) {
+      setActionError(getErrorMessage(requestError));
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  async function handleClose() {
+    if (!details || isClosing) return;
+    setActionError("");
+    setIsClosing(true);
+    try {
+      await closeTicket(details.id);
+      setDetails(await getTicketDetails(details.id));
+      setCloseConfirmOpen(false);
+    } catch (requestError: unknown) {
+      setActionError(getErrorMessage(requestError));
+    } finally {
+      setIsClosing(false);
+    }
+  }
+
+  const detailStatus = details
+    ? STATUS_CONFIG[details.status] ?? STATUS_CONFIG.new
+    : STATUS_CONFIG.new;
+
+  return (
+    <div className="mx-auto max-w-6xl animate-fade-in space-y-6 p-6 lg:p-8">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground">Поддержка</h1>
+          <p className="text-sm text-muted-foreground">
+            Создавайте обращения и продолжайте переписку с командой поддержки.
+          </p>
         </div>
-
-        {/* Search & Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="pl-9 h-10" placeholder="Поиск проектов..." value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-1 px-1 touch-pan-x">
-            {FILTERS.map(f => (
-                <Button
-                key={f}
-                variant={filter === f ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter(f)}
-                className="text-xs whitespace-nowrap px-4 h-9 shadow-sm"
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Новое обращение
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-display">Новое обращение</DialogTitle>
+            </DialogHeader>
+            <div className="mt-2 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="support-title">Тема</Label>
+                <Input
+                  id="support-title"
+                  value={newTheme}
+                  onChange={(event) => setNewTheme(event.target.value)}
+                  placeholder="Тема обращения"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="support-description">Описание</Label>
+                <Textarea
+                  id="support-description"
+                  value={newDesc}
+                  onChange={(event) => setNewDesc(event.target.value)}
+                  placeholder="Подробно опишите вопрос"
+                  rows={5}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="support-category">Категория</Label>
+                <select
+                  id="support-category"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={newCategory}
+                  onChange={(event) => setNewCategory(event.target.value)}
+                  required
+                  disabled={categoriesLoading || categories.length === 0}
                 >
-                {f}
-                </Button>
-            ))}
+                  <option value="">Выберите категорию</option>
+                  {categories.map((category) => (
+                    <option key={category.code} value={category.code}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                {newCategory && (
+                  <p className="text-xs text-muted-foreground">
+                    {categories.find((category) => category.code === newCategory)?.description}
+                  </p>
+                )}
+                {categoriesError && (
+                  <p role="alert" className="text-sm text-destructive">{categoriesError}</p>
+                )}
+              </div>
+              {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
+              <Button
+                onClick={() => void handleCreate()}
+                className="w-full"
+                disabled={
+                  isSubmitting ||
+                  categoriesLoading ||
+                  !newTheme.trim() ||
+                  !newDesc.trim() ||
+                  !newCategory
+                }
+              >
+                {isSubmitting ? "Создаём…" : "Создать"}
+              </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="h-10 pl-9"
+            placeholder="Поиск по теме или ID…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
         </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {FILTERS.map((filterOption) => (
+            <Button
+              key={filterOption}
+              variant={filter === filterOption ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter(filterOption)}
+              className="whitespace-nowrap text-xs"
+            >
+              {filterOption}
+            </Button>
+          ))}
+        </div>
+      </div>
 
-        {/* Grid */}
-        {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <FolderOpen className="w-12 h-12 mb-4 opacity-40" />
-            {/* <p className="text-lg font-medium">Заяки не найдены</p>
-            <p className="text-sm">Отсавьте заяку или измените фильтры</p> */}
-            <p className="text-lg font-medium">Раздел в разработке</p>
-            <p className="text-sm text-center">Но вы можете <a className="hover:text-primary" target="_blank" href="https://forms.clickup.com/90121612778/f/2kxunbfa-612/MB7T1KYME3OPWKZ9IW">оставить заявку</a></p>
-            <p className="text-sm text-center">Почта для контакта: <a className="hover:text-primary" href="mailto:aor.tech.2026@gmail.com">aor.tech.2026@gmail.com</a></p>
-            </div>
-        ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(p => {
-                const sc = STATUS_CONFIG[p.status];
-                return (
-                <Card
-                    key={p.id}
-                    className="group cursor-pointer border-border hover:border-primary/30 transition-all relative"
-                    onClick={() => navigate(`/projects/${p.id}`)}
-                >
-                    <CardContent className="p-5 pb-7 h-full flex flex-col">
-                    <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1 pr-2">
-                        {p.name}
-                        </h3>
-                        <Badge variant={sc.variant} className="shrink-0 text-xs">{sc.label}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3 flex-1">{p.description}</p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
-                        <span>Обновлен: {normalizeDate(p.updatedAt)}</span>
-                    </div>
-                    <Dialog open={closeTicketDialogOpen === p.id} onOpenChange={(open) => setCloseTicketDialogOpen(open ? p.id : null)}>
-                        <DialogTrigger asChild>
-                        <button
-                            onClick={(e) => {e.stopPropagation(); setCloseTicketDialogOpen(p.id);}}
-                            className="absolute top-auto bottom-1 right-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1"
-                            title="Удалить"
+      {(error || actionError && !createDialogOpen) && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-destructive/30 p-3 text-sm text-destructive">
+          <span>{error || actionError}</span>
+          {error && <Button variant="outline" size="sm" onClick={() => void refreshTickets().catch(() => undefined)}>Повторить</Button>}
+        </div>
+      )}
+
+      {isLoading ? (
+        <p className="py-12 text-center text-sm text-muted-foreground" aria-live="polite">
+          Загружаем обращения…
+        </p>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <FolderOpen className="mb-4 h-12 w-12 opacity-40" />
+          <p className="text-lg font-medium">
+            {tickets.length === 0 ? "У вас пока нет обращений" : "Обращения не найдены"}
+          </p>
+          <p className="text-center text-sm">
+            {tickets.length === 0
+              ? "Создайте первое обращение, чтобы связаться с поддержкой."
+              : "Измените фильтр или поисковый запрос."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((ticket) => {
+            const status = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.new;
+            return (
+              <Card key={ticket.id} className="border-border transition-colors hover:border-primary/40">
+                <CardContent className="flex h-full flex-col p-5">
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <h2 className="line-clamp-1 font-medium">{ticket.name}</h2>
+                    <Badge variant={status.variant} className="shrink-0 text-xs">{status.label}</Badge>
+                  </div>
+                  <p className="mb-3 line-clamp-2 flex-1 text-sm text-muted-foreground">{ticket.description}</p>
+                  <p className="mb-3 text-xs text-muted-foreground">
+                    {getSupportCategoryName(ticket.category, categories)} · {ticket.messageCount} сообщений · Обновлено {dateLabel(ticket.lastMessageAt ?? ticket.updatedAt)}
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => setSelectedTicketId(ticket.id)}>
+                    Открыть переписку
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog
+        open={selectedTicketId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedTicketId(null);
+            setActionError("");
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              {details?.name ?? "Обращение"}
+            </DialogTitle>
+          </DialogHeader>
+          {detailsLoading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Загружаем переписку…</p>
+          ) : details ? (
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>ID: <span className="font-mono text-xs">{details.id}</span></p>
+                  <p>Создано: {dateLabel(details.createdAt)}</p>
+                  <p>Категория: {getSupportCategoryName(details.category, categories)}</p>
+                </div>
+                <Badge variant={detailStatus.variant}>{detailStatus.label}</Badge>
+              </div>
+              <div className="space-y-3">
+                <article className="rounded-md border bg-muted/40 p-4">
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    Ваше обращение · {dateLabel(details.createdAt)}
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm">{details.description}</p>
+                </article>
+                {details.messages.map((message) => (
+                  <article key={message.id} className="rounded-md border p-4">
+                    <p className="mb-1 text-xs text-muted-foreground">
+                      {message.author.user_name} · {dateLabel(message.created_at)}
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm">{message.text}</p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Вложения</h3>
+                {details.attachments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Вложений пока нет.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {details.attachments.map((attachment) => (
+                      <li key={attachment.id} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                        <span className="flex min-w-0 items-center gap-2 truncate">
+                          <Paperclip className="h-4 w-4 shrink-0" />
+                          {attachment.filename}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void downloadAttachment(details.id, attachment).catch((downloadError: unknown) => setActionError(getErrorMessage(downloadError)))}
+                          aria-label={`Скачать ${attachment.filename}`}
                         >
-                            <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                        </DialogTrigger>
-                        <DialogContent onClick={(e) => e.stopPropagation()}>
-                        <DialogHeader><DialogTitle className="font-display">Вы уверены, что хотите удалить проект?</DialogTitle></DialogHeader>
-                        <div className="space-x-4 mt-2 justify-end">
-                            <Button variant="destructive" onClick={()=>{ closeTicket(p.id); setCloseTicketDialogOpen(null) }} className="w-30">Удалить</Button>
-                            <DialogTrigger asChild>
-                            <Button onClick={() => {setCloseTicketDialogOpen(null)}} variant="outline" className="w-30">Отмена</Button>
-                            </DialogTrigger>
-                        </div>
-                        </DialogContent>
-                    </Dialog>
-                    </CardContent>
-                </Card>
-                );
-            })}
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Label htmlFor="support-file" className="sr-only">Добавить вложение</Label>
+                <Input
+                  id="support-file"
+                  type="file"
+                  accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,.docx"
+                  disabled={isUploading || details.status === "closed"}
+                  onChange={(event) => void handleUpload(event)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  PDF, TXT, PNG, JPG, WEBP или DOCX; не более 10 МБ.
+                </p>
+              </div>
+
+              {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
+              {details.status === "closed" && (
+                <p className="text-sm text-muted-foreground">
+                  Ответ на закрытое обращение снова откроет его для поддержки.
+                </p>
+              )}
+              <div className="space-y-3 border-t pt-4">
+                <Label htmlFor="support-reply">Ответ</Label>
+                <Textarea
+                  id="support-reply"
+                  rows={4}
+                  value={reply}
+                  onChange={(event) => setReply(event.target.value)}
+                  placeholder="Напишите сообщение команде поддержки"
+                />
+                <div className="flex flex-wrap justify-between gap-2">
+                  <Button
+                    onClick={() => void handleReply()}
+                    disabled={isSubmitting || !reply.trim()}
+                  >
+                    {isSubmitting
+                      ? "Отправляем…"
+                      : details.status === "closed"
+                        ? "Ответить и открыть снова"
+                        : "Отправить ответ"}
+                  </Button>
+                  {details.status !== "closed" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setCloseConfirmOpen(true)}
+                      disabled={isClosing}
+                    >
+                      Закрыть обращение
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <Dialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Закрыть обращение?</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-muted-foreground">
+                    Переписка сохранится. Если вопрос снова появится, вы сможете ответить
+                    и повторно открыть обращение.
+                  </p>
+                  {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      onClick={() => void handleClose()}
+                      disabled={isClosing}
+                    >
+                      {isClosing ? "Закрываем…" : "Закрыть"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCloseConfirmOpen(false)}
+                      disabled={isClosing}
+                    >
+                      Отмена
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
-        )}
-        </div>
-    );
+          ) : actionError ? (
+            <p role="alert" className="text-sm text-destructive">{actionError}</p>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

@@ -1,6 +1,10 @@
 import { type Block } from "@/lib/projects-context";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import GraphsConstructor, {
+  type dataEntry,
+  type GraphProps,
+} from "@/lib/GraphsConstructor";
 
 interface DocumentPreviewProps {
   blocks: Block[];
@@ -66,6 +70,17 @@ const escapeHtml = (value: unknown) =>
 
 const splitIntoParagraphs = (text: string) => text.split("\n");
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isChartType(value: unknown): value is GraphProps["type"] {
+  return (
+    typeof value === "string" &&
+    ["linear", "area", "bar", "scatter", "pie"].includes(value)
+  );
+}
+
 function blockToMeasureHtml(block: Block) {
   switch (block.type) {
     case "heading": {
@@ -109,6 +124,36 @@ function blockToMeasureHtml(block: Block) {
         })
         .join("");
       return `<div class="my-4"><figure class="inline-block"><figcaption class="text-[11pt] italic mt-2">Таблица 0 - ${escapeHtml(block.content.naming)}</figcaption><table class="w-full border-collapse border border-black table-fixed text-[11pt]"><tbody>${body}</tbody></table><figcaption class="text-[11pt] italic mt-2 text-center">${escapeHtml(block.content.source)}</figcaption></figure></div>`;
+    }
+    case "chart": {
+      const series = Array.isArray(block.content.series)
+        ? block.content.series.filter(isRecord)
+        : [];
+      const rows = series.flatMap((entry) =>
+        (Array.isArray(entry.points) ? entry.points : [])
+          .filter(isRecord)
+          .map(
+            (point) =>
+              `<tr><td class="border border-black px-2 py-1">${escapeHtml(entry.name)}</td><td class="border border-black px-2 py-1">${escapeHtml(point.x)}</td><td class="border border-black px-2 py-1">${escapeHtml(point.y)}</td></tr>`,
+          ),
+      );
+      return `<div class="my-4"><p class="font-bold">${escapeHtml(block.content.title)}</p><p>${escapeHtml(block.content.description)}</p><table class="w-full border-collapse border border-black text-[10pt]"><thead><tr><th>Ряд</th><th>${escapeHtml(block.content.xAxis || "X")}</th><th>${escapeHtml(block.content.yAxis || "Y")}</th></tr></thead><tbody>${rows.join("")}</tbody></table>${block.content.isDemonstration ? '<p class="italic">Демонстрационные данные</p>' : ""}</div>`;
+    }
+    case "diagram": {
+      const nodes = Array.isArray(block.content.nodes)
+        ? block.content.nodes.filter(isRecord)
+        : [];
+      const edges = Array.isArray(block.content.edges)
+        ? block.content.edges.filter(isRecord)
+        : [];
+      const labels = new Map(
+        nodes.map((node) => [String(node.id), String(node.label || "")]),
+      );
+      const rows = edges.map(
+        (edge) =>
+          `<li>${escapeHtml(labels.get(String(edge.from)) || edge.from)} → ${escapeHtml(labels.get(String(edge.to)) || edge.to)}${edge.label ? ` — ${escapeHtml(edge.label)}` : ""}</li>`,
+      );
+      return `<div class="my-4"><p class="font-bold">${escapeHtml(block.content.title)}</p><ul>${rows.join("")}</ul></div>`;
     }
     default:
       return "";
@@ -819,6 +864,80 @@ function PreviewBlock({
               {block.content.source}
             </figcaption>
           </figure>
+        </div>
+      );
+    }
+    case "chart": {
+      const series: dataEntry[] = Array.isArray(block.content.series)
+        ? block.content.series
+            .filter(
+              (entry: unknown): entry is Record<string, unknown> =>
+                isRecord(entry) && Array.isArray(entry.points),
+            )
+            .map((entry, index) => ({
+              id: String(entry.id || `series-${index}`),
+              name: String(entry.name || `Ряд ${index + 1}`),
+              data: (entry.points as unknown[])
+                .filter(
+                  (point): point is Record<string, unknown> =>
+                    isRecord(point) &&
+                    typeof point.x === "string" &&
+                    Number.isFinite(Number(point.y)),
+                )
+                .map((point) => ({ x: String(point.x), y: Number(point.y) })),
+            }))
+        : [];
+      const chartType = isChartType(block.content.chartType)
+        ? block.content.chartType
+        : "linear";
+      return (
+        <div className="my-3 break-inside-avoid">
+          <p className="text-center font-bold">{block.content.title}</p>
+          {block.content.description && (
+            <p className="text-sm">{block.content.description}</p>
+          )}
+          {block.content.isDemonstration && (
+            <p className="text-xs italic">Демонстрационные данные</p>
+          )}
+          <GraphsConstructor
+            id={block.id}
+            type={chartType}
+            dataEntries={series}
+            xAxis={block.content.xAxis}
+            yAxis={block.content.yAxis}
+          />
+        </div>
+      );
+    }
+    case "diagram": {
+      const nodes = Array.isArray(block.content.nodes)
+        ? block.content.nodes.filter(isRecord)
+        : [];
+      const edges = Array.isArray(block.content.edges)
+        ? block.content.edges.filter(isRecord)
+        : [];
+      const labels = new Map(
+        nodes.map((node) => [String(node.id), String(node.label || "")]),
+      );
+      return (
+        <div className="my-4 break-inside-avoid">
+          <p className="text-center font-bold">{block.content.title}</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {nodes.map((node) => (
+              <span key={String(node.id)} className="rounded border border-black px-3 py-2">
+                {String(node.label || "")}
+              </span>
+            ))}
+          </div>
+          <ul className="mt-2 list-inside list-disc text-sm">
+            {edges.map((edge, index: number) => (
+              <li key={`${edge.from}-${edge.to}-${index}`}>
+                {labels.get(String(edge.from)) || String(edge.from)} →{" "}
+                {labels.get(String(edge.to)) || String(edge.to)}
+                {edge.label ? ` — ${String(edge.label)}` : ""}
+              </li>
+            ))}
+          </ul>
         </div>
       );
     }

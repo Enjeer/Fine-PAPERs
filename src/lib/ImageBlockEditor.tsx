@@ -9,12 +9,13 @@ interface ImageBlockEditorProps {
   content: {
     url?: string;
     path?: string;
+    storage_file_id?: string;
     caption?: string;
     source?: string;
     file?: File;
   };
   isSaved?: boolean;
-  onChange: (content: any) => void;
+  onChange: (content: ImageBlockEditorProps["content"]) => void;
 }
 
 export default function ImageBlockEditor({
@@ -64,7 +65,13 @@ export default function ImageBlockEditor({
 
     const localUrl = URL.createObjectURL(selectedFile);
     clearFileInput();
-    onChange({ ...content, url: localUrl, file: selectedFile });
+    onChange({
+      ...content,
+      url: localUrl,
+      file: selectedFile,
+      storage_file_id: undefined,
+      path: undefined,
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -100,7 +107,13 @@ export default function ImageBlockEditor({
 
     const localUrl = URL.createObjectURL(droppedFile);
     clearFileInput();
-    onChange({ ...content, url: localUrl, file: droppedFile });
+    onChange({
+      ...content,
+      url: localUrl,
+      file: droppedFile,
+      storage_file_id: undefined,
+      path: undefined,
+    });
   };
 
   const triggerFileInput = () => {
@@ -109,7 +122,13 @@ export default function ImageBlockEditor({
 
   const removeImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onChange({ ...content, url: "", file: undefined });
+    onChange({
+      ...content,
+      url: "",
+      file: undefined,
+      storage_file_id: undefined,
+      path: undefined,
+    });
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 

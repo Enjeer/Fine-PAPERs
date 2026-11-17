@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import axios from "axios";
 import { api } from "./axios";
 import { GOOGLE_CLIENT_ID } from "@/config";
 import { setAccessToken, clearAccessToken } from "./token-store";
@@ -12,6 +13,15 @@ interface User {
   id: string;
   email: string;
   user_name: string;
+}
+
+interface AuthResponse {
+  access: string;
+  id?: string;
+  user_id?: string;
+  user_name?: string;
+  email?: string;
+  user?: Partial<User>;
 }
 
 interface AuthContextType {
@@ -27,13 +37,52 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const USER_KEY = "ab_user";
 
+function userFromAuthResponse(
+  data: AuthResponse,
+  fallback: Partial<User> = {},
+): User {
+  const user = data.user ?? data;
+  return {
+    id: user.id || data.user_id || fallback.id || "",
+    email: user.email || data.email || fallback.email || "",
+    user_name:
+      user.user_name || data.user_name || fallback.user_name || "",
+  };
+}
+
+function authErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const data: unknown = error.response?.data;
+    if (typeof data === "string") return data;
+    if (typeof data === "object" && data !== null) {
+      const details = data as Record<string, unknown>;
+      const errorDetails = details.errors;
+      const nestedDetails =
+        typeof errorDetails === "object" && errorDetails !== null
+          ? (errorDetails as Record<string, unknown>)
+          : details;
+      const nonFieldErrors = nestedDetails.non_field_errors;
+      if (Array.isArray(nonFieldErrors)) {
+        const message = nonFieldErrors.find(
+          (item): item is string => typeof item === "string",
+        );
+        if (message) return message;
+      }
+      if (typeof nestedDetails.detail === "string") {
+        return nestedDetails.detail;
+      }
+    }
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     api
-      .post("token/refresh/")
+      .post<{ access: string }>("token/refresh/")
       .then(({ data }) => {
         setAccessToken(data.access);
         return api.get("me/");
@@ -48,31 +97,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (login: string, password: string) => {
     try {
-      const response = await api.post("login/", { login, password });
+      const response = await api.post<AuthResponse>("login/", {
+        login,
+        password,
+      });
       const data = response.data;
-
-      const userToSave: User = {
-        id: data.user_id || "",
-        email: data.email || "",
-        user_name: data.user_name || login,
-      };
+      const userToSave = userFromAuthResponse(data, { user_name: login });
 
       setAccessToken(data.access);
       localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
       setUser(userToSave);
-    } catch (error: any) {
-      const errorData = error.response?.data;
-      let finalError = "Ошибка сети или CORS";
-
-      if (errorData) {
-        if (typeof errorData === "string") finalError = errorData;
-        else if (errorData.non_field_errors)
-          finalError = errorData.non_field_errors[0];
-        else if (errorData.detail) finalError = errorData.detail;
-      } else if (error.message) {
-        finalError = error.message;
-      }
-
+    } catch (error: unknown) {
+      const finalError = authErrorMessage(error, "Ошибка сети или CORS");
       console.error("Auth error:", finalError);
       throw finalError;
     }
@@ -81,24 +117,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = useCallback(
     async (user_name: string, email: string, password: string) => {
       try {
-        const response = await api.post("register/", {
+        const response = await api.post<AuthResponse>("register/", {
           user_name,
           email,
           password,
         });
         const data = response.data;
-
-        const userToSave: User = {
-          id: data.user_id || "",
-          email: data.email || email,
-          user_name: data.user_name || user_name,
-        };
+        const userToSave = userFromAuthResponse(data, { email, user_name });
 
         setAccessToken(data.access);
         localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
         setUser(userToSave);
-      } catch (error: any) {
-        throw error.response?.data?.detail || "Ошибка регистрации";
+      } catch (error: unknown) {
+        throw authErrorMessage(error, "Ошибка регистрации");
       }
     },
     [],
@@ -114,29 +145,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       client_id: GOOGLE_CLIENT_ID,
       scope: "openid email profile",
       ux_mode: "popup",
-      callback: async (response: any) => {
+      callback: async (response) => {
         if (response.error) {
           console.error("Google auth error:", response.error);
           return;
         }
 
         try {
-          const res = await api.post("google_auth/", { code: response.code });
+          const res = await api.post<AuthResponse>("google_auth/", {
+            code: response.code,
+          });
           const data = res.data;
-
-          const userToSave: User = {
-            id: data.user_id || "",
-            email: data.email || "",
-            user_name: data.user_name || "",
-          };
+          const userToSave = userFromAuthResponse(data);
 
           setAccessToken(data.access);
           localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
           setUser(userToSave);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(
             "Google auth backend error:",
-            error.response?.data?.detail || error.message,
+            authErrorMessage(error, "Ошибка входа через Google"),
           );
         }
       },

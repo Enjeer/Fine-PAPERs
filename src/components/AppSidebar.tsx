@@ -24,6 +24,7 @@ import Icon from "@/assets/img/NoBase-logo-white.svg";
 import { useState } from "react";
 import { Switch } from "./ui/switch";
 import { useTheme } from "@/lib/themeProvider";
+import NotificationCenter from "@/components/NotificationCenter";
 
 const navItems = [
   { label: "Дашборд", icon: LayoutDashboard, path: "/" },
@@ -118,6 +119,7 @@ export default function AppSidebar({
 
         {/* Navigation */}
         <nav className="flex-1 align-left py-4 px-3 space-y-1 hide-scrollbar">
+          <NotificationCenter collapsed={isCollapsed} />
           {navItems.map((item) => {
             const active = location.pathname === item.path;
             return (

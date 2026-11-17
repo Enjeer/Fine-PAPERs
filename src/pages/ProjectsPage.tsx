@@ -54,7 +54,7 @@ const FILTER_MAP: Record<string, string | null> = {
 };
 
 export default function ProjectsPage() {
-  const { projects, createProject, deleteProject } = useProjects();
+  const { projects, createProject, createAIProject, deleteProject } = useProjects();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<string>("Все");
   const [search, setSearch] = useState("");
@@ -104,6 +104,26 @@ export default function ProjectsPage() {
       navigate(`/projects/${p.id}`);
     } catch (err) {
       alert("Не удалось создать проект");
+    }
+  };
+
+  const handleAssistantCreate = async () => {
+    setIsCreatingProject(true);
+    try {
+      const project = await createAIProject({
+        name: newName.trim() || "Новая работа",
+        description: newDesc,
+        type: newType,
+      });
+      setCreateDialogOpen(false);
+      setNewName("");
+      setNewDesc("");
+      navigate(`/projects/${project.id}/assistant`);
+    } catch (error) {
+      console.error("Failed to create AI project:", error);
+      alert("Не удалось создать проект для ассистента");
+    } finally {
+      setIsCreatingProject(false);
     }
   };
   return (
@@ -167,7 +187,11 @@ export default function ProjectsPage() {
                 Создать
               </Button>
               <hr />
-              <Button className="w-full">
+              <Button
+                className="w-full"
+                onClick={handleAssistantCreate}
+                disabled={isCreatingProject}
+              >
                 <Cross className="w-4 h-4 text-muted-foreground" />
                 Ассистент
               </Button>

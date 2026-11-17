@@ -45,6 +45,8 @@ import {
   Download,
   Eye,
   X,
+  BarChart3,
+  GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -73,12 +75,16 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { api } from "@/lib/axios";
 import { isMobile } from "react-device-detect";
+import ChartBlockEditor from "@/components/ChartBlockEditor";
+import DiagramBlockEditor from "@/components/DiagramBlockEditor";
 
 const BLOCK_TYPES = [
   { type: "heading", label: "Заголовок", icon: Heading },
   { type: "text", label: "Текст", icon: Type },
   { type: "image", label: "Изображение", icon: Image },
   { type: "table", label: "Таблица", icon: Table },
+  { type: "chart", label: "График", icon: BarChart3 },
+  { type: "diagram", label: "Диаграмма процесса", icon: GitBranch },
 ] as const;
 
 type EnrichedBlock = Block & {
@@ -119,6 +125,25 @@ function createBlock(type: Block["type"]): Block {
         type,
         content: { rows: 3, cols: 3, data: Array(9).fill("") },
       };
+    case "chart":
+      return {
+        id,
+        type,
+        content: {
+          title: "",
+          chartType: "linear",
+          xAxis: "",
+          yAxis: "",
+          isDemonstration: true,
+          series: [{ id: crypto.randomUUID(), name: "Ряд 1", points: [] }],
+        },
+      };
+    case "diagram":
+      return {
+        id,
+        type,
+        content: { title: "", diagramType: "flowchart", nodes: [], edges: [] },
+      };
     default:
       return { id, type: "text", content: { text: "" } };
   }
@@ -131,6 +156,9 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const project = getProject(projectId || "");
   const [isInitialized, setIsInitialized] = useState(false);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<
+    Record<string, string>
+  >({});
 
   const [blocks, setBlocks] = useState<Block[]>(() => {
     const existing = Array.isArray(project?.blocks)
@@ -170,6 +198,53 @@ export default function EditorPage() {
   const mobileSwipeRef = useRef({ x: 0, y: 0, active: false });
   const moveTargetRef = useRef<string | null>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
+
+  const storageImageIds = blocks
+    .filter((block) => block.type === "image" && block.content.storage_file_id)
+    .map((block) => block.content.storage_file_id as string);
+  const storageImageIdsKey = [...new Set(storageImageIds)].sort().join(",");
+
+  useEffect(() => {
+    if (!storageImageIdsKey) {
+      setImagePreviewUrls({});
+      return;
+    }
+    let active = true;
+    const objectUrls: string[] = [];
+    const loadImages = async () => {
+      const entries = await Promise.all(
+        storageImageIdsKey.split(",").map(async (fileId) => {
+          const link = await api.get(
+            `storage/files/${fileId}/preview-url/`,
+          );
+          const image = await api.get(link.data.url, {
+            responseType: "blob",
+          });
+          const objectUrl = URL.createObjectURL(image.data);
+          objectUrls.push(objectUrl);
+          return [fileId, objectUrl] as const;
+        }),
+      );
+      if (active) {
+        setImagePreviewUrls(Object.fromEntries(entries));
+      } else {
+        objectUrls.forEach((url) => URL.revokeObjectURL(url));
+      }
+    };
+    loadImages().catch((error) => {
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+      console.error("Failed to load stored document images", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить изображения документа.",
+        variant: "destructive",
+      });
+    });
+    return () => {
+      active = false;
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [storageImageIdsKey]);
 
   const clampPreviewProgress = (value: number) =>
     Math.max(0, Math.min(1, value));
@@ -340,23 +415,21 @@ export default function EditorPage() {
         const isLocalBlob =
           block.type === "image" && block.content.url?.startsWith("blob:");
         if (block.type === "image" && isLocalBlob && block.content.file) {
-          try {
-            const formData = new FormData();
-            formData.append("file", block.content.file);
-            const res = await api.post("upload_image/", formData);
-            return {
-              ...block,
-              content: {
-                ...block.content,
-                url: res.data.url,
-                file: undefined,
-                path: res.data.path,
-              },
-            };
-          } catch (e) {
-            console.error("Image upload failed during save", e);
-            return block;
-          }
+          const file: File = block.content.file;
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("project_id", projectId);
+          const uploaded = await api.post("upload_image/", formData);
+          return {
+            ...block,
+            content: {
+              ...block.content,
+              url: "",
+              path: "",
+              storage_file_id: uploaded.data.storage_file_id,
+              file: undefined,
+            },
+          };
         }
         return block;
       }),
@@ -364,6 +437,7 @@ export default function EditorPage() {
 
     await updateProject(projectId, { name: projectName });
     await updateBlocks(projectId, updatedBlocks);
+    setBlocks(updatedBlocks);
     setIsDirty(false);
     setIsSaved(true);
   }, [blocks, projectId, projectName, updateBlocks, updateProject]);
@@ -437,8 +511,17 @@ export default function EditorPage() {
     );
   }
 
-  const titleBlock = blocks.find((b) => b.type === "title-page");
-  const sortableBlocks = blocks.filter((b) => b.type !== "title-page");
+  const displayBlocks = blocks.map((block) => {
+    const fileId = block.content.storage_file_id as string | undefined;
+    return fileId && imagePreviewUrls[fileId]
+      ? {
+          ...block,
+          content: { ...block.content, url: imagePreviewUrls[fileId] },
+        }
+      : block;
+  });
+  const titleBlock = displayBlocks.find((b) => b.type === "title-page");
+  const sortableBlocks = displayBlocks.filter((b) => b.type !== "title-page");
   const CHAPTER_COLORS = [
     "chapterblue",
     "chapterpurple",
@@ -601,7 +684,20 @@ export default function EditorPage() {
                       totalCount={enrichedBlocks.length}
                       onMove={(dir) => moveBlock(block.id, dir)}
                       onRemove={() => removeBlock(block.id)}
-                      onUpdate={(content) => updateBlock(block.id, content)}
+                      onUpdate={(content) => {
+                        const originalBlock = blocks.find(
+                          (item) => item.id === block.id,
+                        );
+                        const storedFileId =
+                          originalBlock?.content.storage_file_id;
+                        updateBlock(
+                          block.id,
+                          storedFileId &&
+                            content.storage_file_id === storedFileId
+                            ? { ...content, url: originalBlock.content.url }
+                            : content,
+                        );
+                      }}
                       isSaved={isSaved}
                     />
                   ))}
@@ -655,7 +751,7 @@ export default function EditorPage() {
               className="h-full min-h-0 overflow-hidden"
             >
               <DocumentPreview
-                blocks={blocks}
+                blocks={displayBlocks}
                 projectName={projectName}
                 projectType={project.type}
               />
@@ -695,7 +791,7 @@ export default function EditorPage() {
               </div>
               <div className="flex-1 min-h-0 overflow-hidden">
                 <DocumentPreview
-                  blocks={blocks}
+                  blocks={displayBlocks}
                   projectName={projectName}
                   projectType={project.type}
                 />
@@ -802,6 +898,10 @@ function SortableBlockCard({
           ? "Изображение"
           : block.type === "table"
             ? "Таблица"
+            : block.type === "chart"
+              ? "График"
+              : block.type === "diagram"
+                ? "Диаграмма процесса"
             : block.type;
 
   const chapterBgMap = {
@@ -1096,6 +1196,12 @@ function BlockEditor({
           onChange={onChange}
         />
       );
+
+    case "chart":
+      return <ChartBlockEditor content={block.content} onChange={onChange} />;
+
+    case "diagram":
+      return <DiagramBlockEditor content={block.content} onChange={onChange} />;
 
     case "table": {
       const rows = block.content.rows || 3;

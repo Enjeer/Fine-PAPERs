@@ -9,7 +9,16 @@ import { api } from "./axios";
 
 export interface Block {
   id: string;
-  type: "title-page" | "chapter" | "text" | "heading" | "image" | "table";
+  source?: "ai_pipeline";
+  type:
+    | "title-page"
+    | "chapter"
+    | "text"
+    | "heading"
+    | "image"
+    | "table"
+    | "chart"
+    | "diagram";
   content: Record<string, any>;
 }
 
@@ -42,6 +51,10 @@ interface ProjectsContextType {
   createProject: (
     data: Omit<Project, "id" | "updatedAt" | "blocks">,
   ) => Promise<Project | undefined>;
+  createAIProject: (
+    data: Pick<Project, "name" | "description" | "type">,
+  ) => Promise<Project>;
+  refreshProjects: () => Promise<void>;
   updateProject: (id: string, data: Partial<Project>) => Promise<void>;
   updateBlocks: (projectId: string, blocks: Block[]) => Promise<void>;
   downloadProject: (projectId: string, name: string) => Promise<void>;
@@ -175,6 +188,19 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         projects,
         getProject,
         createProject,
+        createAIProject: async (data) => {
+          const response = await api.post("ai/projects/", {
+            ...data,
+            requirements: {},
+          });
+          const cleanProject = sanitizeProject({
+            ...response.data.project,
+            blocks: [],
+          });
+          setProjects((prev) => [cleanProject, ...prev]);
+          return cleanProject;
+        },
+        refreshProjects: getProjects,
         updateProject,
         deleteProject,
         downloadProject,

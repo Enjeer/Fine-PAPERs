@@ -3,36 +3,32 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { ProjectsProvider } from "@/lib/projects-context";
 import { TicketsProvider } from "./lib/tickets-context";
 import MainLayout from "@/layouts/MainLayout";
+import AdminLayout from "@/admin/AdminLayout";
 import AuthPage from "@/pages/AuthPage";
+import AdminDashboardPage from "@/admin/pages/AdminDashboardPage";
+import AdminRolesPage from "@/admin/pages/AdminRolesPage";
+import AdminSupportPage from "@/admin/pages/AdminSupportPage";
+import AdminSupportTicketPage from "@/admin/pages/AdminSupportTicketPage";
 import DashboardPage from "@/pages/DashboardPage";
 import ProjectsPage from "@/pages/ProjectsPage";
 import EditorPage from "@/pages/EditorPage";
 import SupportPage from "./pages/SupportPage";
 import NotFound from "@/pages/NotFound";
+import AIAssistantPage from "@/pages/AIAssistantPage";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ThemeProvider } from "./lib/themeProvider";
 
 const queryClient = new QueryClient();
 
-function AuthFallbackPage() {
-  return <div className="h-screen w-screen bg-background" aria-live="polite" />;
-}
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return <AuthFallbackPage />;
-  if (!user) return <Navigate to="/auth" replace />;
-  return <>{children}</>;
-}
-
 function AppRoutes() {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) return <AuthFallbackPage />;
+  if (isLoading) return <div className="h-screen w-screen bg-background" aria-live="polite" />;
   return (
     <Routes>
       <Route
@@ -51,6 +47,7 @@ function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
+        <Route path="projects/:projectId/assistant" element={<AIAssistantPage />} />
         <Route path="projects/:projectId" element={<EditorPage />} />
         <Route
           path="support"
@@ -60,6 +57,20 @@ function AppRoutes() {
             </TicketsProvider>
           }
         />
+      </Route>
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="roles" element={<AdminRolesPage />} />
+        <Route path="support" element={<AdminSupportPage />} />
+        <Route path="support/:ticketId" element={<AdminSupportTicketPage />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
