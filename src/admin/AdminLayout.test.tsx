@@ -5,9 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 import AdminLayout from "./AdminLayout";
 import { getAdminProfile } from "@/lib/admin-api";
 
-vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({
-    user: { id: "operator-id", user_name: "operator" },
+vi.mock("@/lib/admin-auth-context", () => ({
+  useAdminAuth: () => ({
+    logout: vi.fn(),
   }),
 }));
 

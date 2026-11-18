@@ -8,6 +8,10 @@ vi.mock("@/lib/tickets-context", () => ({
   useTickets: vi.fn(),
 }));
 
+vi.mock("@/lib/auth-context", () => ({
+  useAuth: () => ({ user: { id: "owner", user_name: "owner" } }),
+}));
+
 const ticket = {
   id: "ticket-1",
   name: "Вопрос",
@@ -39,6 +43,12 @@ const details = {
     text: "Уточните, пожалуйста",
     is_internal: false,
     created_at: "2026-01-01T11:00:00Z",
+  }, {
+    id: "internal-1",
+    author: { id: "agent", user_name: "agent" },
+    text: "Служебная заметка",
+    is_internal: true,
+    created_at: "2026-01-01T11:30:00Z",
   }],
   attachments: [],
 };
@@ -76,12 +86,62 @@ describe("SupportPage", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Открыть переписку" }));
     expect(await screen.findByText("Уточните, пожалуйста")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Ответ"), { target: { value: "Спасибо" } });
-    fireEvent.click(screen.getByRole("button", { name: "Отправить ответ" }));
+    expect(screen.queryByText("Служебная заметка")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Исполнитель|ID:/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Новое сообщение"), { target: { value: "Спасибо" } });
+    fireEvent.click(screen.getByRole("button", { name: "Отправить" }));
 
     await waitFor(() =>
       expect(sendMessage).toHaveBeenCalledWith("ticket-1", "Спасибо", expect.any(String)),
     );
+  });
+
+  it("lets a user stage and remove attachments before sending them", async () => {
+    const uploadAttachment = vi.fn().mockResolvedValue(undefined);
+    const getTicketDetails = vi.fn().mockResolvedValue(details);
+    vi.mocked(useTickets).mockReturnValue({
+      tickets: [ticket],
+      categories,
+      categoriesLoading: false,
+      categoriesError: "",
+      isLoading: false,
+      error: "",
+      getTicket: vi.fn(),
+      refreshTickets: vi.fn(),
+      getTicketDetails,
+      createTicket: vi.fn(),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
+      uploadAttachment,
+      downloadAttachment: vi.fn(),
+      closeTicket: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter>
+        <SupportPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Открыть переписку" }));
+    await screen.findByText("Уточните, пожалуйста");
+
+    const file = new File(["sample"], "sample.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByLabelText("Прикрепить"), {
+      target: { files: [file] },
+    });
+    expect(screen.getByText("sample.pdf")).toBeInTheDocument();
+    expect(uploadAttachment).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Удалить вложение sample.pdf" }));
+    expect(screen.queryByText("sample.pdf")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Прикрепить"), {
+      target: { files: [file] },
+    });
+    fireEvent.change(screen.getByLabelText("Новое сообщение"), {
+      target: { value: "Прикладываю файл" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Отправить" }));
+    await waitFor(() => expect(uploadAttachment).toHaveBeenCalledWith("ticket-1", file));
   });
 
   it("creates a ticket through the API context and retains visible failure state", async () => {

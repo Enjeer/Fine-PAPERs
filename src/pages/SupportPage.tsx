@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useTickets, type TicketDetails } from "@/lib/tickets-context";
+import { useAuth } from "@/lib/auth-context";
 import { getSupportCategoryName } from "@/lib/support-api";
 import { Download, FolderOpen, Paperclip, Plus, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -76,6 +77,7 @@ function newIdempotencyKey() {
 
 export default function SupportPage() {
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const {
     tickets,
     categories,
@@ -89,7 +91,6 @@ export default function SupportPage() {
     sendMessage,
     uploadAttachment,
     downloadAttachment,
-    closeTicket,
   } = useTickets();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("Все");
   const [search, setSearch] = useState("");
@@ -106,9 +107,7 @@ export default function SupportPage() {
   const [replyKey, setReplyKey] = useState(newIdempotencyKey);
   const [actionError, setActionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
 
   useEffect(() => {
     const linkedTicketId = searchParams.get("ticket");
@@ -179,15 +178,32 @@ export default function SupportPage() {
   }
 
   async function handleReply() {
-    if (!details || !reply.trim() || isSubmitting) return;
+    const text = reply.trim();
+    const attachments = [...pendingAttachments];
+    if (!details || (!text && attachments.length === 0) || isSubmitting) return;
     setActionError("");
     setIsSubmitting(true);
     try {
-      await sendMessage(details.id, reply.trim(), replyKey);
-      const updated = await getTicketDetails(details.id);
-      setDetails(updated);
-      setReply("");
-      setReplyKey(newIdempotencyKey());
+      if (text) {
+        await sendMessage(details.id, text, replyKey);
+        setReply("");
+        setReplyKey(newIdempotencyKey());
+      }
+
+      for (let index = 0; index < attachments.length; index += 1) {
+        try {
+          await uploadAttachment(details.id, attachments[index]);
+          setPendingAttachments((current) =>
+            current.filter((file) => file !== attachments[index]),
+          );
+        } catch (uploadError: unknown) {
+          setActionError(
+            `${text ? "Сообщение отправлено. " : ""}Не удалось загрузить вложение «${attachments[index].name}»: ${getErrorMessage(uploadError)}`,
+          );
+          break;
+        }
+      }
+      setDetails(await getTicketDetails(details.id));
     } catch (requestError: unknown) {
       setActionError(getErrorMessage(requestError));
     } finally {
@@ -195,35 +211,10 @@ export default function SupportPage() {
     }
   }
 
-  async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!details || !file || isUploading) return;
-    setActionError("");
-    setIsUploading(true);
-    try {
-      await uploadAttachment(details.id, file);
-      setDetails(await getTicketDetails(details.id));
-    } catch (requestError: unknown) {
-      setActionError(getErrorMessage(requestError));
-    } finally {
-      setIsUploading(false);
-      event.target.value = "";
-    }
-  }
-
-  async function handleClose() {
-    if (!details || isClosing) return;
-    setActionError("");
-    setIsClosing(true);
-    try {
-      await closeTicket(details.id);
-      setDetails(await getTicketDetails(details.id));
-      setCloseConfirmOpen(false);
-    } catch (requestError: unknown) {
-      setActionError(getErrorMessage(requestError));
-    } finally {
-      setIsClosing(false);
-    }
+  function selectAttachments(event: ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []);
+    setPendingAttachments((current) => [...current, ...selected]);
+    event.target.value = "";
   }
 
   const detailStatus = details
@@ -397,7 +388,7 @@ export default function SupportPage() {
           }
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="flex h-[90dvh] max-h-[90dvh] w-[calc(100%-1rem)] flex-col overflow-hidden p-4 sm:max-w-2xl sm:p-6">
           <DialogHeader>
             <DialogTitle className="font-display">
               {details?.name ?? "Обращение"}
@@ -406,134 +397,167 @@ export default function SupportPage() {
           {detailsLoading ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Загружаем переписку…</p>
           ) : details ? (
-            <div className="space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p>ID: <span className="font-mono text-xs">{details.id}</span></p>
-                  <p>Создано: {dateLabel(details.createdAt)}</p>
-                  <p>Категория: {getSupportCategoryName(details.category, categories)}</p>
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span>Создано: {dateLabel(details.createdAt)}</span>
+                  <span>Категория: {getSupportCategoryName(details.category, categories)}</span>
                 </div>
                 <Badge variant={detailStatus.variant}>{detailStatus.label}</Badge>
               </div>
-              <div className="space-y-3">
+
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto py-3 pr-1">
                 <article className="rounded-md border bg-muted/40 p-4">
                   <p className="mb-1 text-xs text-muted-foreground">
-                    Ваше обращение · {dateLabel(details.createdAt)}
+                    Вы · {dateLabel(details.createdAt)}
                   </p>
                   <p className="whitespace-pre-wrap text-sm">{details.description}</p>
                 </article>
-                {details.messages.map((message) => (
-                  <article key={message.id} className="rounded-md border p-4">
-                    <p className="mb-1 text-xs text-muted-foreground">
-                      {message.author.user_name} · {dateLabel(message.created_at)}
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm">{message.text}</p>
-                  </article>
-                ))}
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Вложения</h3>
-                {details.attachments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Вложений пока нет.</p>
-                ) : (
-                  <ul className="space-y-2">
+                {details.messages
+                  .filter((message) => !message.is_internal)
+                  .slice()
+                  .sort(
+                    (left, right) =>
+                      new Date(left.created_at).getTime() -
+                      new Date(right.created_at).getTime(),
+                  )
+                  .map((message) => {
+                    const isOwnMessage = message.author.id === user?.id;
+                    return (
+                      <article
+                        key={message.id}
+                        className={`max-w-[90%] rounded-md border p-3 ${
+                          isOwnMessage
+                            ? "ml-auto bg-primary/5"
+                            : "mr-auto bg-muted/30"
+                        }`}
+                      >
+                        <p className="mb-1 text-xs text-muted-foreground">
+                          {isOwnMessage ? "Вы" : "Поддержка"} · {dateLabel(message.created_at)}
+                        </p>
+                        <p className="whitespace-pre-wrap text-sm">{message.text}</p>
+                      </article>
+                    );
+                  })}
+                {details.attachments.length > 0 && (
+                  <ul className="space-y-1" aria-label="Вложения обращения">
                     {details.attachments.map((attachment) => (
-                      <li key={attachment.id} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                      <li
+                        key={attachment.id}
+                        className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm"
+                      >
                         <span className="flex min-w-0 items-center gap-2 truncate">
-                          <Paperclip className="h-4 w-4 shrink-0" />
+                          <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
                           {attachment.filename}
                         </span>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => void downloadAttachment(details.id, attachment).catch((downloadError: unknown) => setActionError(getErrorMessage(downloadError)))}
+                          onClick={() =>
+                            void downloadAttachment(details.id, attachment).catch(
+                              (downloadError: unknown) =>
+                                setActionError(getErrorMessage(downloadError)),
+                            )
+                          }
                           aria-label={`Скачать ${attachment.filename}`}
                         >
-                          <Download className="h-4 w-4" />
+                          <Download className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </li>
                     ))}
                   </ul>
                 )}
-                <Label htmlFor="support-file" className="sr-only">Добавить вложение</Label>
-                <Input
-                  id="support-file"
-                  type="file"
-                  accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,.docx"
-                  disabled={isUploading || details.status === "closed"}
-                  onChange={(event) => void handleUpload(event)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  PDF, TXT, PNG, JPG, WEBP или DOCX; не более 10 МБ.
-                </p>
               </div>
 
-              {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
-              {details.status === "closed" && (
-                <p className="text-sm text-muted-foreground">
-                  Ответ на закрытое обращение снова откроет его для поддержки.
-                </p>
-              )}
-              <div className="space-y-3 border-t pt-4">
-                <Label htmlFor="support-reply">Ответ</Label>
+              <div className="space-y-2 border-t pt-3">
+                {pendingAttachments.length > 0 && (
+                  <ul className="flex flex-wrap gap-2" aria-label="Файлы к отправке">
+                    {pendingAttachments.map((file, index) => (
+                      <li
+                        key={`${file.name}-${file.lastModified}-${index}`}
+                        className="flex max-w-full items-center gap-2 rounded-md border px-2 py-1 text-xs"
+                      >
+                        <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="max-w-48 truncate">{file.name}</span>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() =>
+                            setPendingAttachments((current) =>
+                              current.filter((_, fileIndex) => fileIndex !== index),
+                            )
+                          }
+                          aria-label={`Удалить вложение ${file.name}`}
+                        >
+                          <span aria-hidden="true">×</span>
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Label htmlFor="support-reply" className="sr-only">
+                  Новое сообщение
+                </Label>
                 <Textarea
                   id="support-reply"
-                  rows={4}
+                  rows={3}
+                  className="max-h-32 resize-y"
                   value={reply}
                   onChange={(event) => setReply(event.target.value)}
-                  placeholder="Напишите сообщение команде поддержки"
+                  placeholder="Напишите сообщение…"
+                  disabled={isSubmitting}
                 />
-                <div className="flex flex-wrap justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="support-file"
+                      type="file"
+                      multiple
+                      accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,.docx"
+                      disabled={isSubmitting || details.status === "closed"}
+                      onChange={selectAttachments}
+                      className="sr-only"
+                    />
+                    <Label
+                      htmlFor="support-file"
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      <Paperclip className="h-4 w-4" aria-hidden="true" />
+                      Прикрепить
+                    </Label>
+                    <span className="hidden text-xs text-muted-foreground sm:inline">
+                      До 10 МБ на файл
+                    </span>
+                  </div>
                   <Button
+                    type="button"
                     onClick={() => void handleReply()}
-                    disabled={isSubmitting || !reply.trim()}
+                    disabled={
+                      isSubmitting ||
+                      (!reply.trim() && pendingAttachments.length === 0) ||
+                      (details.status === "closed" && !reply.trim())
+                    }
                   >
                     {isSubmitting
                       ? "Отправляем…"
                       : details.status === "closed"
-                        ? "Ответить и открыть снова"
-                        : "Отправить ответ"}
+                        ? "Ответить и открыть"
+                        : "Отправить"}
                   </Button>
-                  {details.status !== "closed" && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setCloseConfirmOpen(true)}
-                      disabled={isClosing}
-                    >
-                      Закрыть обращение
-                    </Button>
-                  )}
                 </div>
-              </div>
-              <Dialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Закрыть обращение?</DialogTitle>
-                  </DialogHeader>
-                  <p className="text-sm text-muted-foreground">
-                    Переписка сохранится. Если вопрос снова появится, вы сможете ответить
-                    и повторно открыть обращение.
+                <p className="text-xs text-muted-foreground">
+                  PDF, TXT, PNG, JPG, WEBP или DOCX.
+                </p>
+                {actionError && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {actionError}
                   </p>
-                  {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      onClick={() => void handleClose()}
-                      disabled={isClosing}
-                    >
-                      {isClosing ? "Закрываем…" : "Закрыть"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setCloseConfirmOpen(false)}
-                      disabled={isClosing}
-                    >
-                      Отмена
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
+                )}
+              </div>
+            </>
           ) : actionError ? (
             <p role="alert" className="text-sm text-destructive">{actionError}</p>
           ) : null}

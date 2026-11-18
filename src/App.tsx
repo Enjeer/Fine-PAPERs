@@ -1,9 +1,10 @@
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import { ProjectsProvider } from "@/lib/projects-context";
 import { TicketsProvider } from "./lib/tickets-context";
 import MainLayout from "@/layouts/MainLayout";
@@ -22,13 +23,28 @@ import AIAssistantPage from "@/pages/AIAssistantPage";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ThemeProvider } from "./lib/themeProvider";
+import AdminLoginPage from "@/pages/AdminLoginPage";
+import { AdminAuthProvider } from "@/lib/admin-auth-context";
+import { Button } from "@/components/ui/button";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, sessionError, restoreSession } = useAuth();
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith("/admin");
 
-  if (isLoading) return <div className="h-screen w-screen bg-background" aria-live="polite" />;
+  if (!isAdminPath && isLoading) return <div className="h-screen w-screen bg-background" aria-live="polite" />;
+  if (!isAdminPath && sessionError) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background p-6">
+        <div className="space-y-4 text-center" role="alert">
+          <p>{sessionError}</p>
+          <Button onClick={() => void restoreSession()}>Повторить</Button>
+        </div>
+      </div>
+    );
+  }
   return (
     <Routes>
       <Route
@@ -59,11 +75,21 @@ function AppRoutes() {
         />
       </Route>
       <Route
+        path="/admin/login"
+        element={
+          <AdminAuthProvider>
+            <AdminLoginPage />
+          </AdminAuthProvider>
+        }
+      />
+      <Route
         path="/admin"
         element={
-          <ProtectedRoute>
-            <AdminLayout />
-          </ProtectedRoute>
+          <AdminAuthProvider>
+            <AdminProtectedRoute>
+              <AdminLayout />
+            </AdminProtectedRoute>
+          </AdminAuthProvider>
         }
       >
         <Route index element={<AdminDashboardPage />} />

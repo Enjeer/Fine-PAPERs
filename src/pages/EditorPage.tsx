@@ -6,7 +6,7 @@ import {
   type TouchEvent,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useProjects, type Block } from "@/lib/projects-context";
+import { useProjects, type Block, type Project } from "@/lib/projects-context";
 import ImageBlockEditor from "@/lib/ImageBlockEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +77,7 @@ import { api } from "@/lib/axios";
 import { isMobile } from "react-device-detect";
 import ChartBlockEditor from "@/components/ChartBlockEditor";
 import DiagramBlockEditor from "@/components/DiagramBlockEditor";
+import TableBlockEditor from "@/components/TableBlockEditor";
 
 const BLOCK_TYPES = [
   { type: "heading", label: "Заголовок", icon: Heading },
@@ -123,7 +124,11 @@ function createBlock(type: Block["type"]): Block {
       return {
         id,
         type,
-        content: { rows: 3, cols: 3, data: Array(9).fill("") },
+        content: {
+          rows: 2,
+          cols: 2,
+          data: ["Столбец 1", "Столбец 2", "", ""],
+        },
       };
     case "chart":
       return {
@@ -147,6 +152,67 @@ function createBlock(type: Block["type"]): Block {
     default:
       return { id, type: "text", content: { text: "" } };
   }
+}
+
+function TextBlockEditor({
+  block,
+  onChange,
+  isExpanded,
+  onExpandedChange,
+}: {
+  block: Block;
+  onChange: (content: Block["content"]) => void;
+  isExpanded: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [needsCollapse, setNeedsCollapse] = useState(false);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+
+      if (isExpanded) {
+        textarea.style.height = `${textarea.scrollHeight}px`;
+      } else {
+        textarea.style.height = "6rem";
+      }
+      setNeedsCollapse(textarea.scrollHeight > 100);
+    }
+  }, [block.content.text, isExpanded]);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="relative">
+        <Textarea
+          ref={textareaRef}
+          value={block.content.text}
+          onChange={(e) =>
+            onChange({ ...block.content, text: e.target.value })
+          }
+          placeholder="Введите текст..."
+          className={cn(
+            "w-full border-none bg-transparent resize-none px-0 focus-visible:ring-0 leading-relaxed indent-8 transition-[height] duration-200 ease-in-out overflow-hidden",
+            !isExpanded && needsCollapse && "mask-linear-gradient",
+          )}
+          style={{ minHeight: isExpanded ? "100px" : "6rem" }}
+        />
+        {!isExpanded && needsCollapse && (
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+        )}
+      </div>
+
+      {needsCollapse && (
+        <button
+          onClick={() => onExpandedChange?.(!isExpanded)}
+          className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground hover:text-primary transition-colors self-start mt-1 flex items-center gap-1"
+        >
+          {isExpanded ? <>Свернуть</> : <>Развернуть</>}
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function EditorPage() {
@@ -339,7 +405,7 @@ export default function EditorPage() {
       setIsDirty(true);
       setIsSaved(false);
     },
-    [projectId, updateBlocks],
+    [setBlocks],
   );
 
   const addBlock = (type: Block["type"]) => {
@@ -353,7 +419,7 @@ export default function EditorPage() {
     saveBlocks(blocks.filter((b) => b.id !== id));
   };
 
-  const updateBlock = (id: string, content: Record<string, any>) => {
+  const updateBlock = (id: string, content: Block["content"]) => {
     saveBlocks(blocks.map((b) => (b.id === id ? { ...b, content } : b)));
   };
 
@@ -577,7 +643,9 @@ export default function EditorPage() {
         <div className="hidden sm:flex flex-1" />
         <Select
           value={project.status}
-          onValueChange={(v) => updateProject(projectId!, { status: v as any })}
+          onValueChange={(v) =>
+            updateProject(projectId!, { status: v as Project["status"] })
+          }
         >
           <SelectTrigger className="hidden sm:flex w-36 h-8 text-xs">
             <SelectValue />
@@ -857,7 +925,7 @@ interface SortableBlockCardProps {
   totalCount: number;
   onMove: (dir: -1 | 1) => void;
   onRemove: () => void;
-  onUpdate: (content: Record<string, any>) => void;
+  onUpdate: (content: Block["content"]) => void;
   isSaved: boolean;
 }
 
@@ -1004,7 +1072,7 @@ function BlockEditor({
   onTextExpandedChange,
 }: {
   block: Block;
-  onChange: (c: Record<string, any>) => void;
+  onChange: (c: Block["content"]) => void;
   isSaved: boolean;
   isTextExpanded?: boolean;
   onTextExpandedChange?: (expanded: boolean) => void;
@@ -1045,59 +1113,17 @@ function BlockEditor({
         </div>
       );
 
-    case "text": {
-      const textareaRef = useRef<HTMLTextAreaElement>(null);
-      const isExpanded = isTextExpanded ?? false;
-      const [needsCollapse, setNeedsCollapse] = useState(false);
-
-      useEffect(() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-          textarea.style.height = "auto";
-
-          if (isExpanded) {
-            textarea.style.height = `${textarea.scrollHeight}px`;
-          } else {
-            textarea.style.height = "6rem";
-          }
-          setNeedsCollapse(textarea.scrollHeight > 100);
-        }
-      }, [block.content.text, isExpanded]);
-
+    case "text":
       return (
-        <div className="flex flex-col gap-1">
-          <div className="relative">
-            <Textarea
-              ref={textareaRef}
-              value={block.content.text}
-              onChange={(e) =>
-                onChange({ ...block.content, text: e.target.value })
-              }
-              placeholder="Введите текст..."
-              className={cn(
-                "w-full border-none bg-transparent resize-none px-0 focus-visible:ring-0 leading-relaxed indent-8 transition-[height] duration-200 ease-in-out overflow-hidden",
-                !isExpanded && needsCollapse && "mask-linear-gradient",
-              )}
-              style={{ minHeight: isExpanded ? "100px" : "6rem" }}
-            />
-            {!isExpanded && needsCollapse && (
-              <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-            )}
-          </div>
-
-          {needsCollapse && (
-            <button
-              onClick={() => onTextExpandedChange?.(!isExpanded)}
-              className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground hover:text-primary transition-colors self-start mt-1 flex items-center gap-1"
-            >
-              {isExpanded ? <>Свернуть</> : <>Развернуть</>}
-            </button>
-          )}
-        </div>
+        <TextBlockEditor
+          block={block}
+          onChange={onChange}
+          isExpanded={isTextExpanded ?? false}
+          onExpandedChange={onTextExpandedChange}
+        />
       );
-    }
 
-    case "title-page":
+    case "title-page": {
       const unis = [
         {
           key: "БГЭУ",
@@ -1187,6 +1213,7 @@ function BlockEditor({
           ))}
         </div>
       );
+    }
 
     case "image":
       return (
@@ -1203,105 +1230,8 @@ function BlockEditor({
     case "diagram":
       return <DiagramBlockEditor content={block.content} onChange={onChange} />;
 
-    case "table": {
-      const rows = block.content.rows || 3;
-      const cols = block.content.cols || 3;
-      const data: string[] = block.content.data || Array(rows * cols).fill("");
-      return (
-        <div className="space-y-3">
-          <div
-            key="naming"
-            className="grid grid-cols-[140px_1fr] items-center gap-2"
-          >
-            <label className="text-xs text-muted-foreground font-medium">
-              Подпись к таблице
-            </label>
-            <Input
-              value={block.content["naming"] || ""}
-              onChange={(e) =>
-                onChange({ ...block.content, naming: e.target.value })
-              }
-              className="h-8 text-sm"
-              placeholder="Название таблицы"
-            />
-          </div>
-          <div
-            key="source"
-            className="grid grid-cols-[140px_1fr] items-center gap-2"
-          >
-            <label className="text-xs text-muted-foreground font-medium">
-              Подпись к таблице
-            </label>
-            <Input
-              value={block.content["source"] || "Примечание - Источник:"}
-              onChange={(e) =>
-                onChange({ ...block.content, source: e.target.value })
-              }
-              className="h-8 text-sm"
-              placeholder="Н.п. Примечание - Источник: собственная разработка"
-            />
-          </div>
-          <div className="flex gap-3 items-center">
-            <label className="text-xs text-muted-foreground">Строки</label>
-            <Input
-              type="number"
-              min={1}
-              max={20}
-              value={rows}
-              onChange={(e) => {
-                const newRows = Number(e.target.value);
-                const newData = Array(newRows * cols)
-                  .fill("")
-                  .map((_, i) => data[i] || "");
-                onChange({ ...block.content, rows: newRows, data: newData });
-              }}
-              className="w-16 h-7 text-xs"
-            />
-            <label className="text-xs text-muted-foreground">Столбцы</label>
-            <Input
-              type="number"
-              min={1}
-              max={10}
-              value={cols}
-              onChange={(e) => {
-                const newCols = Number(e.target.value);
-                const newData = Array(rows * newCols).fill("");
-                for (let r = 0; r < rows; r++) {
-                  for (let c = 0; c < Math.min(cols, newCols); c++) {
-                    newData[r * newCols + c] = data[r * cols + c] || "";
-                  }
-                }
-                onChange({ ...block.content, cols: newCols, data: newData });
-              }}
-              className="w-16 h-7 text-xs"
-            />
-          </div>
-          <div className="overflow-x-auto border border-border rounded-md">
-            <table className="w-full text-sm">
-              <tbody>
-                {Array.from({ length: rows }).map((_, r) => (
-                  <tr key={r} className={r === 0 ? "bg-muted/50" : ""}>
-                    {Array.from({ length: cols }).map((_, c) => (
-                      <td key={c} className="border border-border p-0">
-                        <input
-                          value={data[r * cols + c] || ""}
-                          onChange={(e) => {
-                            const newData = [...data];
-                            newData[r * cols + c] = e.target.value;
-                            onChange({ ...block.content, data: newData });
-                          }}
-                          className="w-full px-2 py-1.5 bg-transparent text-foreground outline-none text-xs"
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
-    }
+    case "table":
+      return <TableBlockEditor content={block.content} onChange={onChange} />;
 
     default:
       return (

@@ -51,8 +51,6 @@ export interface TicketAttachment {
 }
 
 export interface TicketDetails extends Ticket {
-  user: TicketUser;
-  assignee: TicketUser | null;
   messages: TicketMessage[];
   attachments: TicketAttachment[];
 }
@@ -189,8 +187,6 @@ export function TicketsProvider({ children }: { children: React.ReactNode }) {
     const response = await api.get<TicketDetails>(`support/tickets/${id}/`);
     return {
       ...normalizeTicket(response.data),
-      user: response.data.user,
-      assignee: response.data.assignee,
       messages: response.data.messages,
       attachments: response.data.attachments,
     };

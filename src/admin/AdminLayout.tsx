@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { NavLink, Outlet, Link } from "react-router-dom";
 import { ArrowLeft, Headset, LayoutDashboard, Shield, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth-context";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 import { getAdminProfile, type AdminProfile } from "@/lib/admin-api";
 
 const sectionIcons = {
@@ -55,11 +55,10 @@ function AdminLoadError({ error, retry }: { error: unknown; retry: () => void })
 }
 
 export default function AdminLayout() {
-  const { user } = useAuth();
+  const { logout } = useAdminAuth();
   const profileQuery = useQuery({
-    queryKey: ["admin-profile", user?.id],
+    queryKey: ["admin-profile"],
     queryFn: getAdminProfile,
-    enabled: Boolean(user),
     retry: false,
     refetchOnMount: "always",
   });
@@ -136,6 +135,13 @@ export default function AdminLayout() {
           <span className="text-sm text-muted-foreground">
             {profile.user.user_name}
           </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void logout().catch((error: unknown) => console.error("Admin logout failed:", error))}
+          >
+            Выйти
+          </Button>
           <nav className="flex w-full gap-2 md:hidden" aria-label="Административная навигация">
             {profile.sections.map((section) => (
               <Link

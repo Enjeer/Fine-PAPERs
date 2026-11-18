@@ -1,4 +1,4 @@
-import { api } from "@/lib/axios";
+import { adminApi } from "@/lib/admin-auth-api";
 import { getSupportCategories } from "@/lib/support-api";
 
 export { getSupportCategories };
@@ -96,19 +96,19 @@ export interface SupportQueueParams {
 }
 
 export async function getSupportQueue(params: SupportQueueParams) {
-  const response = await api.get<SupportQueueResponse>("admin/support/tickets/", {
+  const response = await adminApi.get<SupportQueueResponse>("admin/support/tickets/", {
     params,
   });
   return response.data;
 }
 
 export async function getSupportTicket(ticketId: string) {
-  const response = await api.get<SupportTicket>(`admin/support/tickets/${ticketId}/`);
+  const response = await adminApi.get<SupportTicket>(`admin/support/tickets/${ticketId}/`);
   return response.data;
 }
 
 export async function getSupportAssignees() {
-  const response = await api.get<SupportAssignee[]>("admin/support/assignees/");
+  const response = await adminApi.get<SupportAssignee[]>("admin/support/assignees/");
   return response.data;
 }
 
@@ -117,7 +117,7 @@ export async function sendSupportReply(
   text: string,
   idempotencyKey: string,
 ) {
-  const response = await api.post<SupportMessage>(
+  const response = await adminApi.post<SupportMessage>(
     `admin/support/tickets/${ticketId}/messages/`,
     { text },
     { headers: { "Idempotency-Key": idempotencyKey } },
@@ -130,7 +130,7 @@ export async function addSupportNote(
   text: string,
   idempotencyKey: string,
 ) {
-  const response = await api.post<SupportMessage>(
+  const response = await adminApi.post<SupportMessage>(
     `admin/support/tickets/${ticketId}/notes/`,
     { text },
     { headers: { "Idempotency-Key": idempotencyKey } },
@@ -143,7 +143,7 @@ export async function updateSupportStatus(
   status: string,
   reason: string,
 ) {
-  const response = await api.post<SupportTicket>(
+  const response = await adminApi.post<SupportTicket>(
     `admin/support/tickets/${ticketId}/status/`,
     { status, reason },
   );
@@ -151,7 +151,7 @@ export async function updateSupportStatus(
 }
 
 export async function assignSupportTicket(ticketId: string, assigneeId: string) {
-  const response = await api.post<SupportTicket>(
+  const response = await adminApi.post<SupportTicket>(
     `admin/support/tickets/${ticketId}/assignment/`,
     { assignee_id: assigneeId || null },
   );
@@ -162,8 +162,8 @@ export async function downloadSupportAttachment(
   ticketId: string,
   attachment: SupportAttachment,
 ) {
-  const response = await api.get<Blob>(
-    `support/tickets/${ticketId}/attachments/${attachment.id}/`,
+  const response = await adminApi.get<Blob>(
+    `admin/support/tickets/${ticketId}/attachments/${attachment.id}/`,
     { responseType: "blob" },
   );
   const objectUrl = URL.createObjectURL(response.data);

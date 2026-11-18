@@ -38,6 +38,8 @@ describe("ProtectedRoute", () => {
     mockedUseAuth.mockReturnValue({
       user: { id: "user-uuid", email: "admin@example.test", user_name: "admin" },
       isLoading: false,
+      sessionError: null,
+      restoreSession: vi.fn(),
       login: vi.fn(),
       signUp: vi.fn(),
       logout: vi.fn(),
@@ -52,6 +54,8 @@ describe("ProtectedRoute", () => {
     mockedUseAuth.mockReturnValue({
       user: null,
       isLoading: false,
+      sessionError: null,
+      restoreSession: vi.fn(),
       login: vi.fn(),
       signUp: vi.fn(),
       logout: vi.fn(),
@@ -67,6 +71,8 @@ describe("ProtectedRoute", () => {
     mockedUseAuth.mockReturnValue({
       user: null,
       isLoading: true,
+      sessionError: null,
+      restoreSession: vi.fn(),
       login: vi.fn(),
       signUp: vi.fn(),
       logout: vi.fn(),

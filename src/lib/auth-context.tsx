@@ -27,6 +27,8 @@ interface AuthResponse {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  sessionError: string;
+  restoreSession: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   signUp: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -34,21 +36,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-const USER_KEY = "ab_user";
-
-function userFromAuthResponse(
-  data: AuthResponse,
-  fallback: Partial<User> = {},
-): User {
-  const user = data.user ?? data;
-  return {
-    id: user.id || data.user_id || fallback.id || "",
-    email: user.email || data.email || fallback.email || "",
-    user_name:
-      user.user_name || data.user_name || fallback.user_name || "",
-  };
-}
 
 function authErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
@@ -79,35 +66,49 @@ function authErrorMessage(error: unknown, fallback: string): string {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionError, setSessionError] = useState("");
 
-  useEffect(() => {
-    api
-      .post<{ access: string }>("token/refresh/")
-      .then(({ data }) => {
-        setAccessToken(data.access);
-        return api.get("me/");
-      })
-      .then(({ data }) => setUser(data))
-      .catch(() => {
+  const restoreSession = useCallback(async () => {
+    setIsLoading(true);
+    setSessionError("");
+    try {
+      const { data: tokenData } = await api.post<{ access: string }>(
+        "token/refresh/",
+      );
+      setAccessToken(tokenData.access);
+      const { data: profile } = await api.get<User>("me/");
+      setUser(profile);
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === undefined || status >= 500) {
+        setSessionError("Не удалось загрузить профиль. Проверьте соединение и повторите попытку.");
+      } else {
         clearAccessToken();
-        setUser(null);
-      })
-      .finally(() => setIsLoading(false));
+      }
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    void restoreSession();
+  }, [restoreSession]);
+
   const login = useCallback(async (login: string, password: string) => {
+    setSessionError("");
     try {
       const response = await api.post<AuthResponse>("login/", {
         login,
         password,
       });
       const data = response.data;
-      const userToSave = userFromAuthResponse(data, { user_name: login });
-
       setAccessToken(data.access);
-      localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
-      setUser(userToSave);
+      const profile = await api.get<User>("me/");
+      setUser(profile.data);
     } catch (error: unknown) {
+      clearAccessToken();
+      setUser(null);
       const finalError = authErrorMessage(error, "Ошибка сети или CORS");
       console.error("Auth error:", finalError);
       throw finalError;
@@ -116,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = useCallback(
     async (user_name: string, email: string, password: string) => {
+      setSessionError("");
       try {
         const response = await api.post<AuthResponse>("register/", {
           user_name,
@@ -123,12 +125,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password,
         });
         const data = response.data;
-        const userToSave = userFromAuthResponse(data, { email, user_name });
-
         setAccessToken(data.access);
-        localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
-        setUser(userToSave);
+        const profile = await api.get<User>("me/");
+        setUser(profile.data);
       } catch (error: unknown) {
+        clearAccessToken();
+        setUser(null);
         throw authErrorMessage(error, "Ошибка регистрации");
       }
     },
@@ -156,12 +158,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             code: response.code,
           });
           const data = res.data;
-          const userToSave = userFromAuthResponse(data);
-
           setAccessToken(data.access);
-          localStorage.setItem(USER_KEY, JSON.stringify(userToSave));
-          setUser(userToSave);
+          const profile = await api.get<User>("me/");
+          setUser(profile.data);
         } catch (error: unknown) {
+          clearAccessToken();
+          setUser(null);
           console.error(
             "Google auth backend error:",
             authErrorMessage(error, "Ошибка входа через Google"),
@@ -176,6 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     setIsLoading(true);
     setUser(null);
+    setSessionError("");
 
     try {
       await api.post("logout/");
@@ -183,14 +186,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Server logout failed:", error);
     } finally {
       clearAccessToken();
-      localStorage.removeItem("ab_user");
       setIsLoading(false);
     }
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, signUp, logout, loginWithGoogle }}
+      value={{
+        user,
+        isLoading,
+        sessionError,
+        restoreSession,
+        login,
+        signUp,
+        logout,
+        loginWithGoogle,
+      }}
     >
       {children}
     </AuthContext.Provider>

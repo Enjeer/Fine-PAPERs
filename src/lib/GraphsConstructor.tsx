@@ -88,22 +88,36 @@ export default function GraphsConstructor({
   }
 
   if (type === "scatter") {
-    const scatterData = dataEntries.flatMap((entry) =>
-      entry.data.map((point) => ({
-        x: Number(point.x),
-        y: point.y,
-        name: entry.name,
-      })),
-    );
     return (
       <div className="h-64 w-full" role="img" aria-label="Точечная диаграмма">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" dataKey="x" name={xAxis || "X"} />
-            <YAxis type="number" dataKey="y" name={yAxis || "Y"} />
+            <XAxis
+              type="number"
+              dataKey="x"
+              name={xAxis || "X"}
+              label={{ value: xAxis, position: "insideBottom", offset: -3 }}
+            />
+            <YAxis
+              type="number"
+              dataKey="y"
+              name={yAxis || "Y"}
+              label={{ value: yAxis, angle: -90, position: "insideLeft" }}
+            />
             <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-            <Scatter data={scatterData} fill={COLORS[0]} />
+            <Legend />
+            {dataEntries.map((entry, index) => (
+              <Scatter
+                key={entry.id}
+                name={entry.name}
+                data={entry.data.flatMap((point) => {
+                  const x = Number(point.x);
+                  return Number.isFinite(x) ? [{ x, y: point.y }] : [];
+                })}
+                fill={COLORS[index % COLORS.length]}
+              />
+            ))}
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -116,8 +130,11 @@ export default function GraphsConstructor({
         {type === "bar" ? (
           <BarChart data={rows}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
+            <XAxis
+              dataKey="name"
+              label={{ value: xAxis, position: "insideBottom", offset: -3 }}
+            />
+            <YAxis label={{ value: yAxis, angle: -90, position: "insideLeft" }} />
             <Tooltip />
             <Legend />
             {dataEntries.map((entry, index) => (
@@ -132,8 +149,11 @@ export default function GraphsConstructor({
         ) : type === "area" ? (
           <AreaChart data={rows}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
+            <XAxis
+              dataKey="name"
+              label={{ value: xAxis, position: "insideBottom", offset: -3 }}
+            />
+            <YAxis label={{ value: yAxis, angle: -90, position: "insideLeft" }} />
             <Tooltip />
             <Legend />
             {dataEntries.map((entry, index) => (

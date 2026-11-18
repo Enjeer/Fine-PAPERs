@@ -44,7 +44,6 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         clearAccessToken();
-        localStorage.removeItem("ab_user");
         return Promise.reject(refreshError);
       }
     }
